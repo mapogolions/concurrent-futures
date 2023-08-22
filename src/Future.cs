@@ -1,24 +1,26 @@
 ﻿namespace Futures;
 
+using Futures.Awaiters;
+using Futures.Internals;
 
-class CancelledFutureException : Exception  {}
 
-public class Future<T>
+public class Future<T> : ILockable
 {
     private T? _result;
     private Exception? _exception;
-    private FutureState _state = FutureState.Pending;
     private readonly Mutex _mutex = new();
+    private readonly List<FutureAwaiter> _awaiters = new();
 
+    public T? GetResult() => GetResult(Timeout.InfiniteTimeSpan);
 
-    public T Result(TimeSpan timeout)
+    public T? GetResult(TimeSpan timeout)
     {
         Monitor.Enter(_mutex);
-        if (_state is FutureState.Cancelled)
+        if (State is FutureState.Cancelled)
         {
             throw new CancelledFutureException();
         }
-        if (_state is FutureState.Finished)
+        if (State is FutureState.Completed)
         {
             var result = ResultUnsafe();
             Monitor.Exit(_mutex);
@@ -28,11 +30,11 @@ public class Future<T>
         // Pending or Running => wait
         Monitor.Wait(_mutex, timeout);
 
-        if (_state is FutureState.Cancelled)
+        if (State is FutureState.Cancelled)
         {
             throw new CancelledFutureException();
         }
-        if (_state is FutureState.Finished)
+        if (State is FutureState.Completed)
         {
             var result = ResultUnsafe();
             Monitor.Exit(_mutex);
@@ -41,7 +43,37 @@ public class Future<T>
         throw new TimeoutException();
     }
 
-    private T ResultUnsafe()
+    internal FutureState State { get; set; } = FutureState.Pending;
+    internal void SubscribeUnsafe(FutureAwaiter awaiter) => _awaiters.Add(awaiter);
+    internal void UnsubscribeUnsafe(FutureAwaiter awaiter) => _awaiters.Remove(awaiter);
+
+    internal void SetResult(T result)
+    {
+        Monitor.Enter(_mutex);
+        if (State is FutureState.Cancelled || State is FutureState.Completed)
+        {
+            throw new InvalidFutureStateException();
+        }
+        _result = result;
+        State = FutureState.Completed;
+        Monitor.PulseAll(_mutex);
+        Monitor.Exit(_mutex);
+    }
+
+    internal void SetException(Exception exception)
+    {
+        Monitor.Enter(_mutex);
+        if (State is FutureState.Cancelled || State is FutureState.Completed)
+        {
+            throw new InvalidFutureStateException();
+        }
+        _exception = exception;
+        State = FutureState.Completed;
+        Monitor.PulseAll(_mutex);
+        Monitor.Exit(_mutex);
+    }
+
+    private T? ResultUnsafe()
     {
         if (_exception is not null)
         {
@@ -53,22 +85,26 @@ public class Future<T>
     public bool Cancel()
     {
         Monitor.Enter(_mutex);
-        if (_state is FutureState.Pending)
+        if (State is FutureState.Pending)
         {
-            _state = FutureState.Cancelled;
+            State = FutureState.Cancelled;
             Monitor.PulseAll(_mutex);
             Monitor.Exit(_mutex);
-            // call callbacks
             return true;
         }
-        var state = _state;
+        var state = State;
         Monitor.Exit(_mutex);
         return state is FutureState.Cancelled;
     }
 
-    public bool Call()
+    public void Acquire()
     {
-        return true;
+        throw new NotImplementedException();
+    }
+
+    public void Release()
+    {
+        throw new NotImplementedException();
     }
 }
 
@@ -77,5 +113,5 @@ public enum FutureState
     Pending,
     Running,
     Cancelled,
-    Finished
+    Completed
 }
