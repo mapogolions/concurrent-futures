@@ -40,7 +40,8 @@ public class FirstCompletedFutureAwaiter : FutureAwaiter
 
     protected override void AddSuccess(Future<object> future)
     {
-        lock(_lock) {
+        lock(_lock)
+        {
             base.AddSuccess(future);
             _event.Set();
         }
@@ -48,8 +49,8 @@ public class FirstCompletedFutureAwaiter : FutureAwaiter
 
     protected override void AddFailure(Future<object> future)
     {
-        lock(_lock) {
-
+        lock(_lock)
+        {
             base.AddSuccess(future);
             _event.Set();
         }
