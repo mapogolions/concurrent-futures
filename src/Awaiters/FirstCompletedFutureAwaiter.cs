@@ -33,9 +33,9 @@ public class FirstCompletedFutureAwaiter : FutureAwaiter
         _event.WaitOne(timeout);
         foreach (var future in _futures)
         {
-            ((ILockable)future).Acquire();
+            future.Acquire();
             future.UnsubscribeUnsafe(this);
-            ((ILockable)future).Release();
+            future.Release();
         }
         return Done.ToArray();
     }
