@@ -23,14 +23,17 @@ public class FirstCompletedFutureAwaiter : FutureAwaiter
             .ToList();
         if (done.Count > 0)
         {
+            _groupLock.Release();
             return done;
         }
+
         foreach (var future in _futures)
         {
             future.SubscribeUnsafe(this);
         }
         _groupLock.Release();
         _event.WaitOne(timeout);
+
         foreach (var future in _futures)
         {
             future.Acquire();
