@@ -17,23 +17,18 @@ public class FirstCompletedFutureAwaiter : FutureAwaiter
 
     public IReadOnlyCollection<object> Wait(TimeSpan timeout)
     {
-        _groupLock.Acquire();
-        var done = _futures
-            .Where(x => x.State is FutureState.Finished || x.State is FutureState.Cancelled)
-            .ToList();
-        if (done.Count > 0)
+        using (_groupLock.Enter())
         {
-            _groupLock.Release();
-            return done;
+            var done = _futures
+                .Where(x => x.State is FutureState.Finished || x.State is FutureState.Cancelled)
+                .ToList();
+            if (done.Count > 0) return done;
+            foreach (var future in _futures)
+            {
+                future.SubscribeUnsafe(this);
+            }
         }
-
-        foreach (var future in _futures)
-        {
-            future.SubscribeUnsafe(this);
-        }
-        _groupLock.Release();
         _event.WaitOne(timeout);
-
         foreach (var future in _futures)
         {
             future.Acquire();

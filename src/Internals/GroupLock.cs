@@ -1,7 +1,7 @@
 namespace Futures.Internals;
 
 
-internal sealed class GroupLock : ILockable
+internal sealed class GroupLock : ILockable, IDisposable
 {
     private readonly IEnumerable<ILockable> _items;
 
@@ -18,6 +18,13 @@ internal sealed class GroupLock : ILockable
         }
     }
 
+    public GroupLock Enter()
+    {
+        this.Acquire();
+        return this;
+    }
+
+    public void Dispose() => this.Release();
 
     public void Release()
     {
