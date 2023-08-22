@@ -1,13 +1,14 @@
 namespace Future.Tests;
 
 using Futures;
+using Futures.Internals;
 
 public class FutureTest
 {
     [Fact]
     public void ShouldThrowException_WhenSetExceptionOnCancelledFuture()
     {
-        var future = new Future<string>();
+        ICompletableFuture<string> future = new Future<string>();
         future.Cancel();
         Assert.Throws<InvalidFutureStateException>(() => future.SetException(new InvalidOperationException()));
     }
@@ -15,7 +16,7 @@ public class FutureTest
     [Fact]
     public void ShouldThrowException_WhenSetExceptionOnCompletedFuture()
     {
-        var future = new Future<string>();
+        ICompletableFuture<string> future = new Future<string>();
         future.SetResult("foo");
         Assert.Throws<InvalidFutureStateException>(() => future.SetException(new InvalidOperationException()));
     }
@@ -23,7 +24,7 @@ public class FutureTest
     [Fact]
     public void ShouldThrowException_WhenSetResultOnCancelledFuture()
     {
-        var future = new Future<string>();
+        ICompletableFuture<string> future = new Future<string>();
         future.Cancel();
         Assert.Throws<InvalidFutureStateException>(() => future.SetResult("foo"));
     }
@@ -31,7 +32,7 @@ public class FutureTest
     [Fact]
     public void ShouldThrowException_WhenSetResultOnCompletedFuture()
     {
-        var future = new Future<string>();
+        ICompletableFuture<string> future = new Future<string>();
         future.SetResult("foo");
         Assert.Throws<InvalidFutureStateException>(() => future.SetResult("foo"));
     }
@@ -40,7 +41,7 @@ public class FutureTest
     public void ShouldThrowException_WhenGetResultOnCompletedFutureWithException()
     {
         // Arrange
-        var future = new Future<object>();
+        ICompletableFuture<object> future = new Future<object>();
         var t = new Thread(() =>
         {
             Thread.Sleep(TimeSpan.FromMilliseconds(10));
@@ -56,7 +57,7 @@ public class FutureTest
     public void ShouldReturnResult_WhenGetResultOnCompletedFutureWithValue()
     {
         // Arrange
-        var future = new Future<string>();
+        ICompletableFuture<string> future = new Future<string>();
         var t = new Thread(() =>
         {
             Thread.Sleep(TimeSpan.FromMilliseconds(10));
