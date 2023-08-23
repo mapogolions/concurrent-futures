@@ -2,11 +2,16 @@ using Futures.Awaiters;
 
 namespace Futures.Internals;
 
-internal interface ICompletableFuture : IFuture, ILockable
+internal interface ICompletableFuture : ICompletableFuture<object>
 {
-    void SetResult(object result);
+}
+
+
+internal interface ICompletableFuture<T> : IFuture<T>, ILockable
+{
+    void SetResult(T result);
     void SetException(Exception exception);
     FutureState State { get; }
-    void SubscribeUnsafe(FutureAwaiter awaiter);
-    void UnsubscribeUnsafe(FutureAwaiter awaiter);
+    void SubscribeUnsafe(FutureAwaiter<T> awaiter);
+    void UnsubscribeUnsafe(FutureAwaiter<T> awaiter);
 }

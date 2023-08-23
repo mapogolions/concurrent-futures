@@ -4,17 +4,22 @@ using Futures.Awaiters;
 using Futures.Internals;
 
 
-public class Future : ICompletableFuture
+public class Future : Future<object>, ICompletableFuture
+{
+}
+
+
+public class Future<T> : ICompletableFuture<T>
 {
     private FutureState _state = FutureState.Pending;
-    private object? _result;
+    private T? _result;
     private Exception? _exception;
     private readonly Mutex _mutex = new();
-    private readonly List<FutureAwaiter> _awaiters = new();
+    private readonly List<FutureAwaiter<T>> _awaiters = new();
 
-    public object? GetResult() => GetResult(Timeout.InfiniteTimeSpan);
+    public T? GetResult() => GetResult(Timeout.InfiniteTimeSpan);
 
-    public object? GetResult(TimeSpan timeout)
+    public T? GetResult(TimeSpan timeout)
     {
         Monitor.Enter(_mutex);
         if (_state is FutureState.Cancelled)
@@ -59,19 +64,19 @@ public class Future : ICompletableFuture
         return state is FutureState.Cancelled;
     }
 
-    private object? ResultUnsafe() => _exception is null ? _result : throw _exception;
+    private T? ResultUnsafe() => _exception is null ? _result : throw _exception;
 
-    FutureState ICompletableFuture.State => _state;
+    FutureState ICompletableFuture<T>.State => _state;
     void ILockable.Acquire() => Monitor.Enter(_mutex);
     void ILockable.Release() => Monitor.Exit(_mutex);
 
-    void ICompletableFuture.SubscribeUnsafe(FutureAwaiter awaiter) => _awaiters.Add(awaiter);
-    void ICompletableFuture.UnsubscribeUnsafe(FutureAwaiter awaiter) => _awaiters.Remove(awaiter);
+    void ICompletableFuture<T>.SubscribeUnsafe(FutureAwaiter<T> awaiter) => _awaiters.Add(awaiter);
+    void ICompletableFuture<T>.UnsubscribeUnsafe(FutureAwaiter<T> awaiter) => _awaiters.Remove(awaiter);
 
-    void ICompletableFuture.SetResult(object result) => this.Finish(x => x._result = result);
-    void ICompletableFuture.SetException(Exception exception) => this.Finish(x => x._exception = exception);
+    void ICompletableFuture<T>.SetResult(T result) => this.Finish(x => x._result = result);
+    void ICompletableFuture<T>.SetException(Exception exception) => this.Finish(x => x._exception = exception);
 
-    private void Finish(Action<Future> f)
+    private void Finish(Action<Future<T>> f)
     {
         Monitor.Enter(_mutex);
         if (_state is FutureState.Cancelled || _state is FutureState.Finished)
