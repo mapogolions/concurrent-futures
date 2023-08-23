@@ -1,4 +1,4 @@
-namespace Future.Tests;
+namespace Futures.Tests;
 
 using Futures;
 using Futures.Internals;
@@ -8,7 +8,7 @@ public class FutureTest
     [Fact]
     public void ShouldThrowException_WhenSetExceptionOnCancelledFuture()
     {
-        ICompletableFuture<string> future = new Future<string>();
+        ICompletableFuture future = new Future();
         future.Cancel();
         Assert.Throws<InvalidFutureStateException>(() => future.SetException(new InvalidOperationException()));
     }
@@ -16,7 +16,7 @@ public class FutureTest
     [Fact]
     public void ShouldThrowException_WhenSetExceptionOnCompletedFuture()
     {
-        ICompletableFuture<string> future = new Future<string>();
+        ICompletableFuture future = new Future();
         future.SetResult("foo");
         Assert.Throws<InvalidFutureStateException>(() => future.SetException(new InvalidOperationException()));
     }
@@ -24,7 +24,7 @@ public class FutureTest
     [Fact]
     public void ShouldThrowException_WhenSetResultOnCancelledFuture()
     {
-        ICompletableFuture<string> future = new Future<string>();
+        ICompletableFuture future = new Future();
         future.Cancel();
         Assert.Throws<InvalidFutureStateException>(() => future.SetResult("foo"));
     }
@@ -32,7 +32,7 @@ public class FutureTest
     [Fact]
     public void ShouldThrowException_WhenSetResultOnCompletedFuture()
     {
-        ICompletableFuture<string> future = new Future<string>();
+        ICompletableFuture future = new Future();
         future.SetResult("foo");
         Assert.Throws<InvalidFutureStateException>(() => future.SetResult("foo"));
     }
@@ -41,7 +41,7 @@ public class FutureTest
     public void ShouldThrowException_WhenGetResultOnCompletedFutureWithException()
     {
         // Arrange
-        ICompletableFuture<object> future = new Future<object>();
+        ICompletableFuture future = new Future();
         var t = new Thread(() =>
         {
             Thread.Sleep(TimeSpan.FromMilliseconds(10));
@@ -57,7 +57,7 @@ public class FutureTest
     public void ShouldReturnResult_WhenGetResultOnCompletedFutureWithValue()
     {
         // Arrange
-        ICompletableFuture<string> future = new Future<string>();
+        ICompletableFuture future = new Future();
         var t = new Thread(() =>
         {
             Thread.Sleep(TimeSpan.FromMilliseconds(10));
@@ -76,7 +76,7 @@ public class FutureTest
     public void GetResultShouldThrowTimeoutException()
     {
         // Arrange
-        var future = new Future<object>();
+        var future = new Future();
         var start = DateTime.UtcNow;
         var timeout = TimeSpan.FromMilliseconds(100);
 
@@ -87,7 +87,7 @@ public class FutureTest
     [Fact]
     public void CancellationShouldReturnTrue_WhenFutureHasBeenAlreadyCancelled()
     {
-        var future = new Future<object>();
+        var future = new Future();
         future.Cancel();
         Assert.True(future.Cancel());
     }
@@ -95,7 +95,7 @@ public class FutureTest
     [Fact]
     public void ShouldCancelPendingFuture()
     {
-        var future = new Future<object>();
+        var future = new Future();
         Assert.True(future.Cancel());
     }
 }

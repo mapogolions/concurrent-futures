@@ -6,14 +6,16 @@ public class FirstCompletedFutureAwaiter : FutureAwaiter
 {
     private readonly object _lock = new();
     private readonly ManualResetEvent _event = new(false);
-    private readonly ICompletableFuture<object>[] _futures;
+    private readonly ICompletableFuture[] _futures;
     private readonly GroupLock _groupLock;
 
-    public FirstCompletedFutureAwaiter(params Future<object>[] futures)
+    public FirstCompletedFutureAwaiter(params Future[] futures)
     {
         _futures = futures;
         _groupLock = new GroupLock(futures);
     }
+
+    public IReadOnlyCollection<object> Wait() => this.Wait(Timeout.InfiniteTimeSpan);
 
     public IReadOnlyCollection<object> Wait(TimeSpan timeout)
     {
@@ -38,7 +40,7 @@ public class FirstCompletedFutureAwaiter : FutureAwaiter
         return Done.ToArray();
     }
 
-    protected override void AddSuccess(Future<object> future)
+    internal override void AddSuccess(Future future)
     {
         lock(_lock)
         {
@@ -47,7 +49,7 @@ public class FirstCompletedFutureAwaiter : FutureAwaiter
         }
     }
 
-    protected override void AddFailure(Future<object> future)
+    internal override void AddFailure(Future future)
     {
         lock(_lock)
         {
@@ -55,7 +57,7 @@ public class FirstCompletedFutureAwaiter : FutureAwaiter
             _event.Set();
         }
     }
-    protected override void AddCancellation(Future<object> future)
+    internal override void AddCancellation(Future future)
     {
         lock(_lock)
         {

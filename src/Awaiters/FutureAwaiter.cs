@@ -2,19 +2,19 @@ namespace Futures.Awaiters;
 
 public class FutureAwaiter
 {
-    protected readonly List<Future<object>> Done = new();
+    internal readonly List<Future> Done = new();
 
-    protected virtual void AddSuccess(Future<object> future)
+    internal virtual void AddSuccess(Future future)
     {
         Done.Add(future);
     }
 
-    protected virtual void AddFailure(Future<object> future)
+    internal virtual void AddFailure(Future future)
     {
         Done.Add(future);
     }
 
-    protected virtual void AddCancellation(Future<object> future)
+    internal virtual void AddCancellation(Future future)
     {
         Done.Add(future);
     }

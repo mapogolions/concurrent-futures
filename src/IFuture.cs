@@ -1,8 +1,8 @@
 namespace Futures;
 
-public interface IFuture<T>
+public interface IFuture
 {
-    T? GetResult();
-    T? GetResult(TimeSpan timeout);
+    object? GetResult();
+    object? GetResult(TimeSpan timeout);
     bool Cancel();
 }
