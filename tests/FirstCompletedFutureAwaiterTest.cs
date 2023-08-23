@@ -7,15 +7,38 @@ namespace Futures.Tests;
 public class FirstCompletedFutureAwaiterTest
 {
     [Fact]
-    public void ShouldWaitFutureUntilComplete()
+    public void ShouldWaitFutureUntilItCompletedWithException()
     {
         // Arrange
-        ICompletableFuture future = new Future();
-        var awaiter = new FirstCompletedFutureAwaiter((Future)future);
+        ICompletableFuture future1 = new Future();
+        ICompletableFuture future2 = new Future();
+        var awaiter = new FirstCompletedFutureAwaiter((Future)future1, (Future)future2);
+        var t = new Thread(() =>
+        {
+            Thread.Sleep(TimeSpan.FromMilliseconds(50));
+            future1.SetException(new InvalidOperationException());
+        });
+
+        // Act
+        t.Start();
+        var done = awaiter.Wait();
+
+        // Arrange
+        Assert.Single(done);
+
+    }
+
+    [Fact]
+    public void ShouldWaitFutureUntilItCompletedWithResult()
+    {
+        // Arrange
+        ICompletableFuture future1 = new Future();
+        ICompletableFuture future2 = new Future();
+        var awaiter = new FirstCompletedFutureAwaiter((Future)future1, (Future)future2);
         var t = new Thread(() =>
         {
             Thread.Sleep(TimeSpan.FromMilliseconds(1));
-            future.SetResult("foo");
+            future1.SetResult("foo");
         });
 
         // Act
@@ -30,9 +53,10 @@ public class FirstCompletedFutureAwaiterTest
     public void ShouldAddFutureToCompletedCollection_WhenItHasBeenCancelledBeforeWait()
     {
         // Arrange
-        ICompletableFuture future = new Future();
-        future.Cancel();
-        var awaiter = new FirstCompletedFutureAwaiter((Future)future);
+        ICompletableFuture future1 = new Future();
+        ICompletableFuture future2 = new Future();
+        future1.Cancel();
+        var awaiter = new FirstCompletedFutureAwaiter((Future)future1, (Future)future2);
 
         // Act
         var done = awaiter.Wait();
@@ -45,9 +69,10 @@ public class FirstCompletedFutureAwaiterTest
     public void ShouldAddFutureToCompletedCollection_WhenItCompletedWithExceptionBeforeWait()
     {
         // Arrange
-        ICompletableFuture future = new Future();
-        future.SetException(new InvalidOperationException());
-        var awaiter = new FirstCompletedFutureAwaiter((Future)future);
+        ICompletableFuture future1 = new Future();
+        ICompletableFuture future2 = new Future();
+        future1.SetException(new InvalidOperationException());
+        var awaiter = new FirstCompletedFutureAwaiter((Future)future1, (Future)future2);
 
         // Act
         var done = awaiter.Wait();
@@ -60,9 +85,10 @@ public class FirstCompletedFutureAwaiterTest
     public void ShouldAddFutureToCompletedCollection_WhenItIsAlreadyCompletedWithResultBeforeWait()
     {
         // Arrange
-        ICompletableFuture future = new Future();
-        future.SetResult("foo");
-        var awaiter = new FirstCompletedFutureAwaiter((Future)future);
+        ICompletableFuture future1 = new Future();
+        ICompletableFuture future2 = new Future();
+        future1.SetResult("foo");
+        var awaiter = new FirstCompletedFutureAwaiter((Future)future1, (Future)future2);
 
         // Act
         var done = awaiter.Wait();
