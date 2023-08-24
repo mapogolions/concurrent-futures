@@ -6,7 +6,7 @@ namespace Futures.Tests;
 public class FirstCompletedAwaiterPolicyTest
 {
     [Fact]
-    public void ShouldWaitFutureUntilItCompletedWithException()
+    public void ShouldWaitFutureUntilItIsCompletedWithException()
     {
         // Arrange
         ICompletableFuture future1 = new Future();
@@ -27,7 +27,7 @@ public class FirstCompletedAwaiterPolicyTest
     }
 
     [Fact]
-    public void ShouldWaitFutureUntilItCompletedWithResult()
+    public void ShouldWaitFutureUntilItIsCompletedWithResult()
     {
         // Arrange
         ICompletableFuture future1 = new Future();
@@ -47,7 +47,7 @@ public class FirstCompletedAwaiterPolicyTest
     }
 
     [Fact]
-    public void ShouldAddFutureToCompletedCollection_WhenItHasBeenCancelledBeforeWait()
+    public void ShouldAddFutureToCompletedCollection_WhenItIsCancelledBeforeWait()
     {
         // Arrange
         ICompletableFuture future1 = new Future();
@@ -62,7 +62,7 @@ public class FirstCompletedAwaiterPolicyTest
     }
 
     [Fact]
-    public void ShouldAddFutureToCompletedCollection_WhenItCompletedWithExceptionBeforeWait()
+    public void ShouldAddFutureToCompletedCollection_WhenItIsCompletedWithExceptionBeforeWait()
     {
         // Arrange
         ICompletableFuture future1 = new Future();
@@ -77,7 +77,7 @@ public class FirstCompletedAwaiterPolicyTest
     }
 
     [Fact]
-    public void ShouldAddFutureToCompletedCollection_WhenItIsAlreadyCompletedWithResultBeforeWait()
+    public void ShouldAddFutureToCompletedCollection_WhenItIsCompletedWithResultBeforeWait()
     {
         // Arrange
         ICompletableFuture future1 = new Future();

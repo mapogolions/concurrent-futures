@@ -92,7 +92,7 @@ public class Future<T> : ICompletableFuture<T>
         Monitor.Exit(_mutex);
     }
 
-    public static IReadOnlyCollection<Future<R>> Wait<R>(FutureWaitPolicy policy = FutureWaitPolicy.AllCompleted, params Future<R>[] futures)
+    public static IReadOnlyCollection<Future<R>> Wait<R>(FutureWaitPolicy policy, params Future<R>[] futures)
     {
         IFutureAwaiter<R> awaiter = policy switch
         {
