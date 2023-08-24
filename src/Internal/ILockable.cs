@@ -1,4 +1,4 @@
-namespace Futures.Internals;
+namespace Futures.Internal;
 
 internal interface ILockable
 {

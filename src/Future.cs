@@ -1,13 +1,6 @@
-﻿namespace Futures;
+﻿using Futures.Internal;
 
-using Futures.Awaiters;
-using Futures.Internals;
-
-
-public class Future : Future<object>, ICompletableFuture
-{
-}
-
+namespace Futures;
 
 public class Future<T> : ICompletableFuture<T>
 {
@@ -15,7 +8,7 @@ public class Future<T> : ICompletableFuture<T>
     private T? _result;
     private Exception? _exception;
     private readonly Mutex _mutex = new();
-    private readonly List<FutureAwaiter<T>> _awaiters = new();
+    private readonly List<IFutureAwaiterPolicy<T>> _policies = new();
 
     public T? GetResult() => GetResult(Timeout.InfiniteTimeSpan);
 
@@ -70,11 +63,22 @@ public class Future<T> : ICompletableFuture<T>
     void ILockable.Acquire() => Monitor.Enter(_mutex);
     void ILockable.Release() => Monitor.Exit(_mutex);
 
-    void ICompletableFuture<T>.SubscribeUnsafe(FutureAwaiter<T> awaiter) => _awaiters.Add(awaiter);
-    void ICompletableFuture<T>.UnsubscribeUnsafe(FutureAwaiter<T> awaiter) => _awaiters.Remove(awaiter);
+    void ICompletableFuture<T>.AddPolicy(IFutureAwaiterPolicy<T> policy) => _policies.Add(policy);
+    void ICompletableFuture<T>.RemovePolicy(IFutureAwaiterPolicy<T> policy) => _policies.Remove(policy);
 
-    void ICompletableFuture<T>.SetResult(T result) => this.Finish(x => x._result = result);
-    void ICompletableFuture<T>.SetException(Exception exception) => this.Finish(x => x._exception = exception);
+    void ICompletableFuture<T>.SetResult(T result) => this.Finish(x =>
+    {
+        x._result = result;
+        _state = FutureState.Finished;
+        _policies.ForEach(x => x.AddResult(this));
+    });
+
+    void ICompletableFuture<T>.SetException(Exception exception) => this.Finish(x =>
+    {
+        x._exception = exception;
+        _state = FutureState.Finished;
+        _policies.ForEach(x => x.AddResult(this));
+    });
 
     private void Finish(Action<Future<T>> f)
     {
@@ -84,9 +88,9 @@ public class Future<T> : ICompletableFuture<T>
             throw new InvalidFutureStateException();
         }
         f(this);
-        _state = FutureState.Finished;
-        _awaiters.ForEach(x => x.AddFailure(this));
         Monitor.PulseAll(_mutex);
         Monitor.Exit(_mutex);
     }
 }
+
+public class Future : Future<object>, ICompletableFuture { }

@@ -1,7 +1,7 @@
 namespace Futures.Tests;
 
 using Futures;
-using Futures.Internals;
+using Futures.Internal;
 
 public class FutureTest
 {

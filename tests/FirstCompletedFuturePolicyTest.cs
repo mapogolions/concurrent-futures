@@ -1,5 +1,4 @@
-using Futures.Awaiters;
-using Futures.Internals;
+using Futures.Internal;
 
 namespace Futures.Tests;
 
@@ -12,7 +11,7 @@ public class FirstCompletedFuturePolicyTest
         // Arrange
         ICompletableFuture future1 = new Future();
         ICompletableFuture future2 = new Future();
-        var awaiter = new FirstCompletedFuturePolicy((Future)future1, (Future)future2);
+        var awaiter = FutureAwaiter.UseFirstCompledPolicy((Future)future1, (Future)future2);
         var t = new Thread(() =>
         {
             Thread.Sleep(TimeSpan.FromMilliseconds(50));
@@ -34,7 +33,7 @@ public class FirstCompletedFuturePolicyTest
         // Arrange
         ICompletableFuture future1 = new Future();
         ICompletableFuture future2 = new Future();
-        var awaiter = new FirstCompletedFuturePolicy((Future)future1, (Future)future2);
+        var awaiter = FutureAwaiter.UseFirstCompledPolicy((Future)future1, (Future)future2);
         var t = new Thread(() =>
         {
             Thread.Sleep(TimeSpan.FromMilliseconds(1));
@@ -56,7 +55,7 @@ public class FirstCompletedFuturePolicyTest
         ICompletableFuture future1 = new Future();
         ICompletableFuture future2 = new Future();
         future1.Cancel();
-        var awaiter = new FirstCompletedFuturePolicy((Future)future1, (Future)future2);
+        var awaiter = FutureAwaiter.UseFirstCompledPolicy((Future)future1, (Future)future2);
 
         // Act
         var done = awaiter.Wait();
@@ -72,7 +71,7 @@ public class FirstCompletedFuturePolicyTest
         ICompletableFuture future1 = new Future();
         ICompletableFuture future2 = new Future();
         future1.SetException(new InvalidOperationException());
-        var awaiter = new FirstCompletedFuturePolicy((Future)future1, (Future)future2);
+        var awaiter = FutureAwaiter.UseFirstCompledPolicy((Future)future1, (Future)future2);
 
         // Act
         var done = awaiter.Wait();
@@ -88,7 +87,7 @@ public class FirstCompletedFuturePolicyTest
         ICompletableFuture future1 = new Future();
         ICompletableFuture future2 = new Future();
         future1.SetResult("foo");
-        var awaiter = new FirstCompletedFuturePolicy((Future)future1, (Future)future2);
+        var awaiter = FutureAwaiter.UseFirstCompledPolicy((Future)future1, (Future)future2);
 
         // Act
         var done = awaiter.Wait();
