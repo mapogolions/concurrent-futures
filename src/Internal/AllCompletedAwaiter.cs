@@ -27,10 +27,11 @@ internal sealed class AllCompletedAwaiter<T> : IFutureAwaiter<T>
             return done;
         }
         var uncompleted = done.Count == 0 ? _futures : _futures.Except(done).ToArray();
-        var policy = new AllCompletedAwaiterPolicy(this, done);
+        var policy = new AllCompletedAwaiterPolicy(this, uncompleted);
         _groupLock.Release();
         _event.WaitOne(timeout);
-        return policy.Done();
+        done.AddRange(policy.Done());
+        return done;
     }
 
     private sealed class AllCompletedAwaiterPolicy : IFutureAwaiterPolicy<T>
@@ -40,7 +41,9 @@ internal sealed class AllCompletedAwaiter<T> : IFutureAwaiter<T>
         private readonly AllCompletedAwaiter<T> _awaiter;
         private readonly IReadOnlyCollection<ICompletableFuture<T>> _uncompleted;
 
-        public AllCompletedAwaiterPolicy(AllCompletedAwaiter<T> awaiter, IReadOnlyCollection<ICompletableFuture<T>> uncompleted)
+        public AllCompletedAwaiterPolicy(
+            AllCompletedAwaiter<T> awaiter,
+            IReadOnlyCollection<ICompletableFuture<T>> uncompleted)
         {
             _awaiter = awaiter ?? throw new ArgumentNullException(nameof(awaiter));
             _uncompleted = uncompleted ?? throw new ArgumentNullException(nameof(uncompleted));
