@@ -8,7 +8,7 @@ internal sealed class AllCompletedAwaiter<T> : IFutureAwaiter<T>
 
     public AllCompletedAwaiter(params Future<T>[] futures)
     {
-        _futures = futures;
+        _futures = futures.ToArray();
         _groupLock = new GroupLock(futures);
     }
 
