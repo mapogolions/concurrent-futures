@@ -1,6 +1,6 @@
-namespace Futures;
+namespace Futures.Internal;
 
-public interface IFutureAwaiter<T>
+internal interface IFutureAwaiter<T>
 {
     IReadOnlyCollection<Future<T>> Wait();
     IReadOnlyCollection<Future<T>> Wait(TimeSpan timeout);

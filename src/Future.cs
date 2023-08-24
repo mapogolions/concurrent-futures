@@ -91,6 +91,17 @@ public class Future<T> : ICompletableFuture<T>
         Monitor.PulseAll(_mutex);
         Monitor.Exit(_mutex);
     }
+
+    public static IReadOnlyCollection<Future<R>> Wait<R>(FutureWaitPolicy policy = FutureWaitPolicy.AllCompleted, params Future<R>[] futures)
+    {
+        IFutureAwaiter<R> awaiter = policy switch
+        {
+            FutureWaitPolicy.FirtCompleted => new FirstCompletedAwaiter<R>(futures),
+            FutureWaitPolicy.AllCompleted => new AllCompletedAwaiter<R>(futures),
+            _ => throw new ArgumentOutOfRangeException()
+        };
+        return awaiter.Wait();
+    }
 }
 
-public class Future : Future<object>, ICompletableFuture { }
+public class Future : Future<object>, ICompletableFuture {}
