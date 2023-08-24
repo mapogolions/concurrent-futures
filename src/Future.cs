@@ -77,7 +77,7 @@ public class Future<T> : ICompletableFuture<T>
     {
         x._exception = exception;
         _state = FutureState.Finished;
-        _policies.ForEach(x => x.AddResult(this));
+        _policies.ForEach(x => x.AddException(this));
     });
 
     private void Finish(Action<Future<T>> f)

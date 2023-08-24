@@ -3,7 +3,7 @@ using Futures.Internal;
 namespace Futures.Tests;
 
 
-public class FirstCompletedFuturePolicyTest
+public class FirstCompletedAwaiterPolicyTest
 {
     [Fact]
     public void ShouldWaitFutureUntilItCompletedWithException()
