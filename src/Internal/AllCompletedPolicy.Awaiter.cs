@@ -10,14 +10,14 @@ internal sealed partial class AllCompletedPolicy<T>
         private readonly IReadOnlyCollection<ICompletableFuture<T>> _uncompleted;
 
         public AllCompletedAwaiter(
-            AllCompletedPolicy<T> awaiter,
+            AllCompletedPolicy<T> policy,
             IReadOnlyCollection<ICompletableFuture<T>> uncompleted)
         {
-            _policy = awaiter ?? throw new ArgumentNullException(nameof(awaiter));
+            _policy = policy ?? throw new ArgumentNullException(nameof(policy));
             _uncompleted = uncompleted ?? throw new ArgumentNullException(nameof(uncompleted));
             foreach (var future in _uncompleted)
             {
-                future.AddPolicy(this);
+                future.Subscribe(this);
             }
         }
 
@@ -26,7 +26,7 @@ internal sealed partial class AllCompletedPolicy<T>
             foreach (var future in _uncompleted)
             {
                 future.Acquire();
-                future.RemovePolicy(this);
+                future.Unsubscribe(this);
                 future.Release();
             }
             return _completed;

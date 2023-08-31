@@ -64,8 +64,8 @@ public class Future<T> : ICompletableFuture<T>
     void ILockable.Acquire() => Monitor.Enter(_mutex);
     void ILockable.Release() => Monitor.Exit(_mutex);
 
-    void ICompletableFuture<T>.AddPolicy(IFutureAwaiter<T> awaiter) => _awaiters.Add(awaiter);
-    void ICompletableFuture<T>.RemovePolicy(IFutureAwaiter<T> awaiter) => _awaiters.Remove(awaiter);
+    void ICompletableFuture<T>.Subscribe(IFutureAwaiter<T> awaiter) => _awaiters.Add(awaiter);
+    void ICompletableFuture<T>.Unsubscribe(IFutureAwaiter<T> awaiter) => _awaiters.Remove(awaiter);
 
     bool ICompletableFuture<T>.Run()
     {

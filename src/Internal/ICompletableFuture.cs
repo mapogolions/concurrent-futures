@@ -9,8 +9,8 @@ internal interface ICompletableFuture<T> : ILockable
     void SetResult(T result);
     void SetException(Exception exception);
     FutureState State { get; }
-    void AddPolicy(IFutureAwaiter<T> awaiter);
-    void RemovePolicy(IFutureAwaiter<T> awaiter);
+    void Subscribe(IFutureAwaiter<T> awaiter);
+    void Unsubscribe(IFutureAwaiter<T> awaiter);
 }
 
 internal interface ICompletableFuture : ICompletableFuture<object> { }

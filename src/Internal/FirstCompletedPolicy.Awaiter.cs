@@ -8,12 +8,12 @@ internal sealed partial class FirstCompletedPolicy<T>
         private readonly List<Future<T>> _completed = new();
         private readonly FirstCompletedPolicy<T> _policy;
 
-        public FirstCompletedAwaiter(FirstCompletedPolicy<T> awaiter)
+        public FirstCompletedAwaiter(FirstCompletedPolicy<T> policy)
         {
-            _policy = awaiter ?? throw new ArgumentNullException(nameof(awaiter));
-            foreach (var future in awaiter._futures)
+            _policy = policy ?? throw new ArgumentNullException(nameof(policy));
+            foreach (var future in policy._futures)
             {
-                future.AddPolicy(this);
+                future.Subscribe(this);
             }
         }
 
@@ -22,7 +22,7 @@ internal sealed partial class FirstCompletedPolicy<T>
             foreach (var future in _policy._futures)
             {
                 future.Acquire();
-                future.RemovePolicy(this);
+                future.Unsubscribe(this);
                 future.Release();
             }
             return _completed;
