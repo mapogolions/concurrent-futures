@@ -1,4 +1,5 @@
-﻿using Futures.Internal;
+﻿using System.ComponentModel;
+using Futures.Internal;
 
 namespace Futures;
 
@@ -66,6 +67,25 @@ public class Future<T> : ICompletableFuture<T>
     void ICompletableFuture<T>.AddPolicy(IFutureAwaiter<T> awaiter) => _awaiters.Add(awaiter);
     void ICompletableFuture<T>.RemovePolicy(IFutureAwaiter<T> awaiter) => _awaiters.Remove(awaiter);
 
+    bool ICompletableFuture<T>.Run()
+    {
+        Monitor.Enter(_mutex);
+        if (_state is FutureState.Pending)
+        {
+            _state = FutureState.Running;
+            Monitor.Exit(_mutex);
+            return true;
+        }
+        if (_state is FutureState.Cancelled)
+        {
+            _state = FutureState.CancellationPropagated;
+            _awaiters.ForEach(x => x.AddCancellation(this));
+            Monitor.Exit(_mutex);
+            return false;
+        }
+        throw new InvalidFutureStateException($"Future in unexpected state: {_state}");
+    }
+
     void ICompletableFuture<T>.SetResult(T result) => this.Finish(x =>
     {
         x._result = result;
@@ -83,7 +103,7 @@ public class Future<T> : ICompletableFuture<T>
     private void Finish(Action<Future<T>> f)
     {
         Monitor.Enter(_mutex);
-        if (_state is FutureState.Cancelled || _state is FutureState.Finished)
+        if (_state is FutureState.Cancelled  || _state is FutureState.CancellationPropagated || _state is FutureState.Finished)
         {
             throw new InvalidFutureStateException();
         }
