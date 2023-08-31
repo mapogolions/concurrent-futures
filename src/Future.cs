@@ -8,7 +8,7 @@ public class Future<T> : ICompletableFuture<T>
     private T? _result;
     private Exception? _exception;
     private readonly Mutex _mutex = new();
-    private readonly List<IFutureAwaiterPolicy<T>> _policies = new();
+    private readonly List<IFutureAwaiter<T>> _awaiters = new();
 
     public T? GetResult() => GetResult(Timeout.InfiniteTimeSpan);
 
@@ -63,21 +63,21 @@ public class Future<T> : ICompletableFuture<T>
     void ILockable.Acquire() => Monitor.Enter(_mutex);
     void ILockable.Release() => Monitor.Exit(_mutex);
 
-    void ICompletableFuture<T>.AddPolicy(IFutureAwaiterPolicy<T> policy) => _policies.Add(policy);
-    void ICompletableFuture<T>.RemovePolicy(IFutureAwaiterPolicy<T> policy) => _policies.Remove(policy);
+    void ICompletableFuture<T>.AddPolicy(IFutureAwaiter<T> awaiter) => _awaiters.Add(awaiter);
+    void ICompletableFuture<T>.RemovePolicy(IFutureAwaiter<T> awaiter) => _awaiters.Remove(awaiter);
 
     void ICompletableFuture<T>.SetResult(T result) => this.Finish(x =>
     {
         x._result = result;
         _state = FutureState.Finished;
-        _policies.ForEach(x => x.AddResult(this));
+        _awaiters.ForEach(x => x.AddResult(this));
     });
 
     void ICompletableFuture<T>.SetException(Exception exception) => this.Finish(x =>
     {
         x._exception = exception;
         _state = FutureState.Finished;
-        _policies.ForEach(x => x.AddException(this));
+        _awaiters.ForEach(x => x.AddException(this));
     });
 
     private void Finish(Action<Future<T>> f)
@@ -94,13 +94,13 @@ public class Future<T> : ICompletableFuture<T>
 
     public static IReadOnlyCollection<Future<R>> Wait<R>(FutureWaitPolicy policy, params Future<R>[] futures)
     {
-        IFutureAwaiter<R> awaiter = policy switch
+        IFutureAwaiterPolicy<R> policy_ = policy switch
         {
-            FutureWaitPolicy.FirtCompleted => new FirstCompletedAwaiter<R>(futures),
-            FutureWaitPolicy.AllCompleted => new AllCompletedAwaiter<R>(futures),
+            FutureWaitPolicy.FirtCompleted => new FirstCompletedPolicy<R>(futures),
+            FutureWaitPolicy.AllCompleted => new AllCompletedPolicy<R>(futures),
             _ => throw new ArgumentOutOfRangeException()
         };
-        return awaiter.Wait();
+        return policy_.Wait();
     }
 }
 

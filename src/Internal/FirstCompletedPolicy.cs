@@ -1,12 +1,12 @@
 namespace Futures.Internal;
 
-internal sealed partial class AllCompletedAwaiter<T> : IFutureAwaiter<T>
+internal sealed partial class FirstCompletedPolicy<T> : IFutureAwaiterPolicy<T>
 {
     private readonly ManualResetEvent _event = new(false);
     private readonly GroupLock _lock;
     private readonly ICompletableFuture<T>[] _futures;
 
-    public AllCompletedAwaiter(params Future<T>[] futures)
+    public FirstCompletedPolicy(params Future<T>[] futures)
     {
         _futures = futures.ToArray();
         _lock = new GroupLock(futures);
@@ -21,16 +21,15 @@ internal sealed partial class AllCompletedAwaiter<T> : IFutureAwaiter<T>
             .Where(x => x.State is FutureState.Finished || x.State is FutureState.Cancelled)
             .Cast<Future<T>>()
             .ToList();
-        if (done.Count == _futures.Length)
+        if (done.Count > 0)
         {
             _lock.Release();
             return done;
         }
-        var uncompleted = done.Count == 0 ? _futures : _futures.Except(done).ToArray();
-        var policy = new AllCompletedAwaiterPolicy(this, uncompleted);
+        // There are no completed futures, so listen to all of them
+        var policy = new FirstCompletedAwaiter(this);
         _lock.Release();
         _event.WaitOne(timeout);
-        done.AddRange(policy.Done());
-        return done;
+        return policy.Done();
     }
 }

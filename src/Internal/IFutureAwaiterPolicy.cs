@@ -2,7 +2,6 @@ namespace Futures.Internal;
 
 internal interface IFutureAwaiterPolicy<T>
 {
-    void AddResult(Future<T> future);
-    void AddException(Future<T> future);
-    void AddCancellation(Future<T> future);
+    IReadOnlyCollection<Future<T>> Wait();
+    IReadOnlyCollection<Future<T>> Wait(TimeSpan timeout);
 }
