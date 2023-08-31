@@ -27,9 +27,9 @@ internal sealed partial class FirstCompletedPolicy<T> : IFutureAwaiterPolicy<T>
             return done;
         }
         // There are no completed futures, so listen to all of them
-        var policy = new FirstCompletedAwaiter(this);
+        var awaiter = new FirstCompletedAwaiter(this);
         _lock.Release();
         _event.WaitOne(timeout);
-        return policy.Done();
+        return awaiter.Done();
     }
 }

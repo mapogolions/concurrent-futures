@@ -27,10 +27,10 @@ internal sealed partial class AllCompletedPolicy<T> : IFutureAwaiterPolicy<T>
             return done;
         }
         var uncompleted = done.Count == 0 ? _futures : _futures.Except(done).ToArray();
-        var policy = new AllCompletedAwaiter(this, uncompleted);
+        var awaiter = new AllCompletedAwaiter(this, uncompleted);
         _lock.Release();
         _event.WaitOne(timeout);
-        done.AddRange(policy.Done());
+        done.AddRange(awaiter.Done());
         return done;
     }
 }
