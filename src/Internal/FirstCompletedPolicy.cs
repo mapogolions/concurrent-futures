@@ -9,7 +9,7 @@ internal sealed partial class FirstCompletedPolicy<T> : IFutureAwaiterPolicy<T>
     public FirstCompletedPolicy(params Future<T>[] futures)
     {
         _futures = futures.ToArray();
-        _lock = new GroupLock(futures);
+        _lock = new GroupLock(_futures);
     }
 
     public IReadOnlyCollection<Future<T>> Wait() => this.Wait(Timeout.InfiniteTimeSpan);
