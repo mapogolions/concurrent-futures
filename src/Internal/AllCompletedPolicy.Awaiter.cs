@@ -6,14 +6,14 @@ internal sealed partial class AllCompletedPolicy<T>
     {
         private readonly object _lock = new();
         private readonly List<Future<T>> _completed = new();
-        private readonly AllCompletedPolicy<T> _awaiter;
+        private readonly AllCompletedPolicy<T> _policy;
         private readonly IReadOnlyCollection<ICompletableFuture<T>> _uncompleted;
 
         public AllCompletedAwaiter(
             AllCompletedPolicy<T> awaiter,
             IReadOnlyCollection<ICompletableFuture<T>> uncompleted)
         {
-            _awaiter = awaiter ?? throw new ArgumentNullException(nameof(awaiter));
+            _policy = awaiter ?? throw new ArgumentNullException(nameof(awaiter));
             _uncompleted = uncompleted ?? throw new ArgumentNullException(nameof(uncompleted));
             foreach (var future in _uncompleted)
             {
@@ -43,7 +43,7 @@ internal sealed partial class AllCompletedPolicy<T>
                 _completed.Add(future);
                 if (_completed.Count == _uncompleted.Count)
                 {
-                    _awaiter._event.Set();
+                    _policy._event.Set();
                 }
             }
         }
