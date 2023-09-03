@@ -18,7 +18,7 @@ internal sealed partial class FirstCompletedPolicy<T> : IFutureAwaiterPolicy<T>
     {
         _lock.Acquire();
         var done = _futures
-            .Where(x => x.State is FutureState.Finished || x.State is FutureState.Cancelled)
+            .Where(x => x.State is FutureState.Finished || x.State is FutureState.CancellationPropagated)
             .Cast<Future<T>>()
             .ToList();
         if (done.Count > 0)

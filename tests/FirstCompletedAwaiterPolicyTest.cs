@@ -47,15 +47,20 @@ public class FirstCompletedAwaiterPolicyTest
     }
 
     [Fact]
-    public void ShouldAddFutureToCompletedCollection_WhenItIsCancelledBeforeWait()
+    public void ShouldNotAddFutureToCompletedCollection_WhenItIsCancelledBeforeWait()
     {
         // Arrange
-        ICompletableFuture future1 = new Future();
-        ICompletableFuture future2 = new Future();
-        future1.Cancel();
+        ICompletableFuture future = new Future();
+        future.Cancel();
+        var t = new Thread(() =>
+        {
+            Thread.Sleep(TimeSpan.FromMilliseconds(10));
+            future.Run();
+        });
+        t.Start();
 
         // Act
-        var done = Future.Wait(FutureWaitPolicy.FirtCompleted, (Future)future1, (Future)future2);
+        var done = Future.Wait(FutureWaitPolicy.FirtCompleted, (Future)future);
 
         // Assert
         Assert.Single(done);
