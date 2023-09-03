@@ -5,7 +5,7 @@ internal interface ICompletableFuture<T> : ILockable
     T? GetResult();
     T? GetResult(TimeSpan timeout);
     bool Cancel();
-    bool Run();
+    bool RunOrPropagate();
     void SetResult(T result);
     void SetException(Exception exception);
     FutureState State { get; }

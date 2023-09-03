@@ -55,7 +55,7 @@ public class FirstCompletedAwaiterPolicyTest
         var t = new Thread(() =>
         {
             Thread.Sleep(TimeSpan.FromMilliseconds(10));
-            future.Run();
+            future.RunOrPropagate();
         });
         t.Start();
 
