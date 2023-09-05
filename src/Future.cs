@@ -86,16 +86,16 @@ public class Future<T> : ICompletableFuture<T>
         throw new InvalidFutureStateException($"Future in unexpected state: {_state}");
     }
 
-    void ICompletableFuture<T>.SetResult(T result) => this.Finish(x =>
+    void ICompletableFuture<T>.SetResult(T result) => this.Finish(_ =>
     {
-        x._result = result;
+        _result = result;
         _state = FutureState.Finished;
         _awaiters.ForEach(x => x.AddResult(this));
     });
 
-    void ICompletableFuture<T>.SetException(Exception exception) => this.Finish(x =>
+    void ICompletableFuture<T>.SetException(Exception exception) => this.Finish(_ =>
     {
-        x._exception = exception;
+        _exception = exception;
         _state = FutureState.Finished;
         _awaiters.ForEach(x => x.AddException(this));
     });
