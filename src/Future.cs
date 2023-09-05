@@ -16,7 +16,7 @@ public class Future<T> : ICompletableFuture<T>
     public T? GetResult(TimeSpan timeout)
     {
         Monitor.Enter(_mutex);
-        if (_state is FutureState.Cancelled)
+        if (_state is FutureState.Cancelled || _state is FutureState.CancellationPropagated)
         {
             throw new CancelledFutureException();
         }
@@ -30,7 +30,7 @@ public class Future<T> : ICompletableFuture<T>
         // Pending or Running => wait
         Monitor.Wait(_mutex, timeout);
 
-        if (_state is FutureState.Cancelled)
+        if (_state is FutureState.Cancelled || _state is FutureState.CancellationPropagated)
         {
             throw new CancelledFutureException();
         }
