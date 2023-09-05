@@ -85,10 +85,23 @@ public class FutureTest
     }
 
     [Fact]
-    public void CancellationShouldReturnTrue_WhenFutureHasBeenAlreadyCancelled()
+    public void CancellationShouldReturnTrue_WhenCancellatinoHasBeenPropagated()
     {
-        var future = new Future();
+        ICompletableFuture future = new Future();
         future.Cancel();
+        future.RunOrPropagate();
+
+        Assert.Equal(FutureState.CancellationPropagated, future.State);
+        Assert.True(future.Cancel());
+    }
+
+    [Fact]
+    public void CancellationShouldReturnTrue_WhenFutureHasBeenCancelled()
+    {
+        ICompletableFuture future = new Future();
+        future.Cancel();
+
+        Assert.Equal(FutureState.Cancelled, future.State);
         Assert.True(future.Cancel());
     }
 

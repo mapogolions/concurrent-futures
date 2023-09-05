@@ -55,7 +55,7 @@ public class Future<T> : ICompletableFuture<T>
         }
         var state = _state;
         Monitor.Exit(_mutex);
-        return state is FutureState.Cancelled;
+        return state is FutureState.Cancelled || state is FutureState.CancellationPropagated;
     }
 
     private T? ResultUnsafe() => _exception is null ? _result : throw _exception;
