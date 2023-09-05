@@ -67,7 +67,7 @@ public class Future<T> : ICompletableFuture<T>
     void ICompletableFuture<T>.Subscribe(IFutureAwaiter<T> awaiter) => _awaiters.Add(awaiter);
     void ICompletableFuture<T>.Unsubscribe(IFutureAwaiter<T> awaiter) => _awaiters.Remove(awaiter);
 
-    bool ICompletableFuture<T>.RunOrPropagate()
+    bool ICompletableFuture<T>.Run()
     {
         Monitor.Enter(_mutex);
         if (_state is FutureState.Pending)

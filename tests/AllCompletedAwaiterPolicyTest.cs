@@ -62,7 +62,7 @@ public class AllCompletedAwaiterPolicyTest
         var t = new Thread(() =>
         {
             Thread.Sleep(TimeSpan.FromMilliseconds(50));
-            future.RunOrPropagate();
+            future.Run();
         });
 
         // Act

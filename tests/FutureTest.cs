@@ -2,6 +2,7 @@ namespace Futures.Tests;
 
 using Futures;
 using Futures.Internal;
+using Microsoft.VisualStudio.TestPlatform.Common.Utilities;
 
 public class FutureTest
 {
@@ -85,18 +86,44 @@ public class FutureTest
     }
 
     [Fact]
-    public void CancellationShouldReturnTrue_WhenCancellatinoHasBeenPropagated()
+    public void ShouldThrowException_WhenTryingToRunFutureThatHasAlreadyBeenRun()
+    {
+        ICompletableFuture future = new Future();
+        future.Run();
+        Assert.Throws<InvalidFutureStateException>(() => future.Run());
+    }
+
+    [Fact]
+    public void ShouldNotBeAbleToRunCancelledFuture()
     {
         ICompletableFuture future = new Future();
         future.Cancel();
-        future.RunOrPropagate();
+        Assert.False(future.Run());
+        Assert.Equal(FutureState.CancellationPropagated, future.State);
+    }
+
+    [Fact]
+    public void ShouldSuccessfullyRunPendingFuture()
+    {
+        ICompletableFuture future = new Future();
+        Assert.Equal(FutureState.Pending, future.State);
+        Assert.True(future.Run());
+        Assert.Equal(FutureState.Running, future.State);
+    }
+
+    [Fact]
+    public void CancellationShouldReturnTrue_WhenFutureCancelledAndCancellationPropagated()
+    {
+        ICompletableFuture future = new Future();
+        future.Cancel();
+        future.Run();
 
         Assert.Equal(FutureState.CancellationPropagated, future.State);
         Assert.True(future.Cancel());
     }
 
     [Fact]
-    public void CancellationShouldReturnTrue_WhenFutureHasBeenCancelled()
+    public void CancellationShouldReturnTrue_WhenFutureCancelled()
     {
         ICompletableFuture future = new Future();
         future.Cancel();
