@@ -6,17 +6,23 @@ namespace Futures;
 public class ThreadPoolExecutor<T>
 {
     private readonly int _maxWorkers;
-    private bool _shoutdown;
-    private object _shoutdownLock = new();
-    private readonly ConcurrentQueue<WorkItem<T>> _queue;
+    private bool _shutdown;
+    private object _shutdownLock = new();
+    private readonly ConcurrentQueue<WorkItem<T>> _queue = new();
     private readonly SemaphoreSlim _sem = new(0);
     private readonly Thread[] _threads;
 
+    public ThreadPoolExecutor(int maxWorkers)
+    {
+        _maxWorkers = maxWorkers;
+        _threads = new Thread[maxWorkers];
+    }
+
     public Future<T> Submit(Func<object?, T> callback, object? state)
     {
-        lock(_shoutdownLock)
+        lock(_shutdownLock)
         {
-            if (_shoutdown)
+            if (_shutdown)
             {
                 throw new InvalidOperationException("cannot schedule new future");
             }
@@ -25,6 +31,19 @@ public class ThreadPoolExecutor<T>
             _queue.Enqueue(item);
             this.AdjustThreadsUnsafe();
             return future;
+        }
+    }
+
+    public void Shutdown(bool wait = true)
+    {
+        if (_shutdown) return;
+        lock (_shutdownLock)
+        {
+            _shutdown = true;
+            if (wait)
+            {
+                foreach (var t in _threads) t.Join();
+            }
         }
     }
 
