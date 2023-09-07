@@ -43,10 +43,12 @@ public class ThreadPoolExecutor
         lock (_shutdownLock)
         {
             _shutdown = true;
-            if (wait)
-            {
-                foreach (var t in _threads) t.Join();
-            }
+            // TODO: add test that reproduces the issue
+            _queue.Add(null); // wakeup threads
+        }
+        if (wait)
+        {
+            foreach (var t in _threads) t.Join();
         }
     }
 
