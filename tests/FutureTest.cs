@@ -2,7 +2,6 @@ namespace Futures.Tests;
 
 using Futures;
 using Futures.Internal;
-using Microsoft.VisualStudio.TestPlatform.Common.Utilities;
 
 public class FutureTest
 {
