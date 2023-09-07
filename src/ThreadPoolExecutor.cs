@@ -31,7 +31,7 @@ public class ThreadPoolExecutor
             var future = new Future<T>();
             var item = new WorkItem<T>(future, callback, state);
             _queue.Add(item.Run);
-            this.AdjustThreadsUnsafe();
+            this.Spawn();
             return future;
         }
     }
@@ -49,7 +49,7 @@ public class ThreadPoolExecutor
         }
     }
 
-    private void AdjustThreadsUnsafe()
+    private void Spawn()
     {
         if (_sem.Wait(TimeSpan.Zero)) return;
         var size = _threads.Length;
