@@ -8,7 +8,7 @@ public class ThreadPoolExecutor
     private readonly int _maxWorkers;
     private bool _shutdown;
     private object _shutdownLock = new();
-    private readonly ConcurrentQueue<Action?> _queue = new();
+    private readonly BlockingCollection<Action?> _queue = new();
     private readonly SemaphoreSlim _sem = new(0);
     private readonly Thread[] _threads;
 
@@ -30,7 +30,7 @@ public class ThreadPoolExecutor
             }
             var future = new Future<T>();
             var item = new WorkItem<T>(future, callback, state);
-            _queue.Enqueue(item.Run);
+            _queue.Add(item.Run);
             this.AdjustThreadsUnsafe();
             return future;
         }
@@ -62,11 +62,10 @@ public class ThreadPoolExecutor
     private static void Worker(object? state)
     {
         var (poolRef, queue) = (WorkerArgs)state!;
-        var q = new BlockingCollection<Action?>();
         ThreadPoolExecutor? executor = null;
         while (true)
         {
-            if (q.TryTake(out var action))
+            if (queue.TryTake(out var action))
             {
                 if (action is not null)
                 {
@@ -84,8 +83,8 @@ public class ThreadPoolExecutor
                     executor._sem.Release();
                     executor = null;
                 }
-                // block until a new element is somehow pushed onto the queue
-                action = q.Take();
+                // block until a new element is pushed onto the queue
+                action = queue.Take();
                 if (action is not null)
                 {
                     action();
@@ -95,8 +94,7 @@ public class ThreadPoolExecutor
 
             if (!poolRef.TryGetTarget(out executor) || executor._shutdown)
             {
-                q.Add(null);
-                executor = null;
+                queue.Add(null);
                 return;
             }
         }
