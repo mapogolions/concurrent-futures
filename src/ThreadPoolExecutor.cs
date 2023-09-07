@@ -7,7 +7,7 @@ public class ThreadPoolExecutor
 {
     private readonly int _maxWorkers;
     private bool _shutdown;
-    private object _shutdownLock = new();
+    private readonly object _shutdownLock = new();
     private readonly BlockingCollection<Action?> _queue = new();
     private readonly SemaphoreSlim _sem = new(0);
     private readonly Thread[] _threads;
