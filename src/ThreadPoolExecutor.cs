@@ -52,10 +52,13 @@ public class ThreadPoolExecutor
         if (_sem.Wait(TimeSpan.Zero)) return;
         var size = _threads.Length;
         if (size >= _maxWorkers) return;
-        var t = new Thread(() =>
-        {
-        }) { IsBackground = true };
-        t.Start();
+        var t = new Thread(new ParameterizedThreadStart(Worker)) { IsBackground = true };
+        t.Start(new WeakReference<ThreadPoolExecutor>(this));
         _threads[size] = t;
+    }
+
+    private static void Worker(object? state)
+    {
+        var wref = (WeakReference<ThreadPoolExecutor>)state!;
     }
 }
