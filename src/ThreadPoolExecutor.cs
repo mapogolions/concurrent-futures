@@ -6,11 +6,12 @@ namespace Futures;
 public class ThreadPoolExecutor
 {
     private readonly int _maxWorkers;
-    private bool _shutdown;
+    private bool _shutdown = false;
     private readonly object _shutdownLock = new();
     private readonly BlockingCollection<Action?> _queue = new();
     private readonly SemaphoreSlim _sem = new(0);
     private readonly Thread[] _threads;
+    private int _spawns;
 
     public ThreadPoolExecutor() : this(Environment.ProcessorCount) { }
 
@@ -52,11 +53,10 @@ public class ThreadPoolExecutor
     private void Spawn()
     {
         if (_sem.Wait(TimeSpan.Zero)) return;
-        var size = _threads.Length;
-        if (size >= _maxWorkers) return;
+        if (_spawns + 1 >= _maxWorkers) return;
         var t = new Thread(Worker) { IsBackground = true };
         t.Start(new WorkerArgs(this, _queue));
-        _threads[size] = t;
+        _threads[++_spawns] = t;
     }
 
     private static void Worker(object? state)
