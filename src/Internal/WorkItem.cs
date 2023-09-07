@@ -15,7 +15,7 @@ internal sealed class WorkItem<T>
 
     public void Run()
     {
-        _future.Run();
+        if (!_future.Run()) return;
         try
         {
             var result = _callback(_state);
