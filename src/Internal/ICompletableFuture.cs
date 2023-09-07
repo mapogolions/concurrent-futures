@@ -13,4 +13,5 @@ internal interface ICompletableFuture<T> : ILockable
     void Unsubscribe(IFutureAwaiter<T> awaiter);
 }
 
+
 internal interface ICompletableFuture : ICompletableFuture<object> { }

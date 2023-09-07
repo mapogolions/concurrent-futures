@@ -3,12 +3,12 @@ using Futures.Internal;
 
 namespace Futures;
 
-public class ThreadPoolExecutor<T>
+public class ThreadPoolExecutor
 {
     private readonly int _maxWorkers;
     private bool _shutdown;
     private object _shutdownLock = new();
-    private readonly ConcurrentQueue<WorkItem<T>> _queue = new();
+    private readonly ConcurrentQueue<Action> _queue = new();
     private readonly SemaphoreSlim _sem = new(0);
     private readonly Thread[] _threads;
 
@@ -18,7 +18,7 @@ public class ThreadPoolExecutor<T>
         _threads = new Thread[maxWorkers];
     }
 
-    public Future<T> Submit(Func<object?, T> callback, object? state)
+    public Future<T> Submit<T>(Func<object?, T> callback, object? state)
     {
         lock(_shutdownLock)
         {
@@ -28,7 +28,7 @@ public class ThreadPoolExecutor<T>
             }
             var future = new Future<T>();
             var item = new WorkItem<T>(future, callback, state);
-            _queue.Enqueue(item);
+            _queue.Enqueue(item.Run);
             this.AdjustThreadsUnsafe();
             return future;
         }
