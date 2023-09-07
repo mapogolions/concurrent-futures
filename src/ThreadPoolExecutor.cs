@@ -12,6 +12,8 @@ public class ThreadPoolExecutor
     private readonly SemaphoreSlim _sem = new(0);
     private readonly Thread[] _threads;
 
+    public ThreadPoolExecutor() : this(Environment.ProcessorCount) { }
+
     public ThreadPoolExecutor(int maxWorkers)
     {
         _maxWorkers = maxWorkers;
