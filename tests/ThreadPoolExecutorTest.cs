@@ -3,17 +3,19 @@ namespace Futures.Tests;
 public class ThreadPoolExecutorTest
 {
     [Fact]
-    public void ShouldFulfillFutureUsingThreadPoolExecutor()
+    public void ShouldComplete_N_Futures()
     {
-        // Arrange
-        var executor = new ThreadPoolExecutor(2);
-        var future = executor.Submit<string>(s =>
+        var executor = new ThreadPoolExecutor();
+        static string callback(object? s)
         {
-            Thread.Sleep(TimeSpan.FromMilliseconds(100));
+            Thread.Sleep(TimeSpan.FromMilliseconds(10));
             return (string)s!;
-        }, "foo");
+        }
+        var futures = Enumerable.Range(1, 30)
+            .Select(x => executor.Submit<string>(callback, $"task-{x}"))
+            .ToList();
+        var done = Future.Wait<string>(FutureWaitPolicy.AllCompleted, futures.ToArray());
 
-        // Act + Assert
-        Assert.Equal("foo", future.GetResult());
+        Assert.Equal(30, done.Count);
     }
 }
