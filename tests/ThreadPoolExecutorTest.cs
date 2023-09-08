@@ -9,6 +9,8 @@ public class ThreadPoolExecutorTest
         var future = executor.Submit<string>(s => (string)s!, "foo");
         var result = future.GetResult();
 
+        // Give a spawned thread some time to try to take the next element from the BlockingCollection
+        Thread.Sleep(TimeSpan.FromMilliseconds(100));
         executor.Shutdown(wait: true);
 
         Assert.Equal("foo", result);
