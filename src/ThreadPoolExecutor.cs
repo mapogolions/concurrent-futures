@@ -63,7 +63,7 @@ public class ThreadPoolExecutor
 
     private static void Worker(object? state)
     {
-        var (poolRef, queue) = (WorkerArgs)state!;
+        var (executorRef, queue) = (WorkerArgs)state!;
         ThreadPoolExecutor? executor = null;
         while (true)
         {
@@ -78,7 +78,7 @@ public class ThreadPoolExecutor
             else
             {
                 // We are here because queue is empty
-                if (poolRef.TryGetTarget(out executor))
+                if (executorRef.TryGetTarget(out executor))
                 {
                     // We try to signal executor that the current thread is not busy
                     // This helps prevent new threads from being created too early.
@@ -94,7 +94,7 @@ public class ThreadPoolExecutor
                 }
             }
 
-            if (!poolRef.TryGetTarget(out executor) || executor._shutdown)
+            if (!executorRef.TryGetTarget(out executor) || executor._shutdown)
             {
                 queue.Add(null);
                 return;
