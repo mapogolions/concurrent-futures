@@ -14,7 +14,7 @@ internal sealed partial class AllCompletedPolicy<T> : IFutureAwaiterPolicy<T>
 
     public IReadOnlyCollection<Future<T>> Wait() => this.Wait(Timeout.InfiniteTimeSpan);
 
-    public IReadOnlyCollection<Future<T>> Wait(TimeSpan timeout)
+    public IReadOnlyCollection<Future<T>> Wait(TimeSpan timeout, Action<IFutureAwaiterPolicy<T>>? beforeWait = null)
     {
         _lock.Acquire();
         var done = _futures
@@ -29,6 +29,7 @@ internal sealed partial class AllCompletedPolicy<T> : IFutureAwaiterPolicy<T>
         var uncompleted = done.Count == 0 ? _futures : _futures.Except(done).ToArray();
         var awaiter = new AllCompletedAwaiter(this, uncompleted);
         _lock.Release();
+        beforeWait?.Invoke(this);
         _event.WaitOne(timeout);
         done.AddRange(awaiter.Done());
         return done;

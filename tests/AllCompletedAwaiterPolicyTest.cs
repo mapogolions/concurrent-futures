@@ -11,16 +11,11 @@ public class AllCompletedAwaiterPolicyTest
         ICompletableFuture future1 = new Future();
         future1.SetResult("foo");
         ICompletableFuture future2 = new Future();
-
-        var t = new Thread(() =>
-        {
-            Thread.Sleep(TimeSpan.FromMilliseconds(50));
-            future2.SetResult("bar");
-        });
+        var policy = new AllCompletedPolicy<object>((Future)future1, (Future)future2);
+        void beforeWait(IFutureAwaiterPolicy<object> _) => new Thread(() => future2.SetResult("bar")).Start();
 
         // Act
-        t.Start();
-        var done = Future.Wait(FutureWaitPolicy.AllCompleted, (Future)future1, (Future)future2);
+        var done = policy.Wait(Timeout.InfiniteTimeSpan, beforeWait);
 
         // Assert
         Assert.Equal(2, done.Count);
@@ -32,42 +27,34 @@ public class AllCompletedAwaiterPolicyTest
         // Arrange
         ICompletableFuture future1 = new Future();
         ICompletableFuture future2 = new Future();
-        var t1 = new Thread(() =>
+        var policy = new AllCompletedPolicy<object>((Future)future1, (Future)future2);
+
+        void beforeWait(IFutureAwaiterPolicy<object> _)
         {
-            Thread.Sleep(TimeSpan.FromMilliseconds(100));
-            future1.SetResult("foo");
-        });
-        var t2 = new Thread(() =>
-        {
-            Thread.Sleep(TimeSpan.FromMilliseconds(100));
-            future2.SetException(new InvalidOperationException());
-        });
+            new Thread(() => future1.SetResult("foo")).Start();
+            new Thread(() => future2.SetException(new InvalidOperationException())).Start();
+        }
 
 
         // Act
-        t1.Start();
-        t2.Start();
-        var done = Future.Wait(FutureWaitPolicy.AllCompleted, (Future)future1, (Future)future2);
+        var done = policy.Wait(Timeout.InfiniteTimeSpan, beforeWait);
 
         // Assert
         Assert.Equal(2, done.Count);
     }
 
     [Fact]
-    public void ShouldNotAddFuturesToCompletedCollection_WhenTheyAreCancelledBeforeWait()
+    public void ShouldAddCancelledFutureToCompletedCollection_OnlyWhenCancellationHasPropagated()
     {
         // Arrange
         ICompletableFuture future = new Future();
         future.Cancel();
-        var t = new Thread(() =>
-        {
-            Thread.Sleep(TimeSpan.FromMilliseconds(50));
-            future.Run();
-        });
+        var policy = new AllCompletedPolicy<object>((Future)future);
+
+        void beforeWait(IFutureAwaiterPolicy<object> _) => new Thread(() => future.Run()).Start();
 
         // Act
-        t.Start();
-        var done = Future.Wait(FutureWaitPolicy.FirtCompleted, (Future)future);
+        var done = policy.Wait(Timeout.InfiniteTimeSpan, beforeWait);
 
         // Assert
         Assert.Single(done);

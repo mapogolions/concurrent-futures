@@ -14,7 +14,7 @@ internal sealed partial class FirstCompletedPolicy<T> : IFutureAwaiterPolicy<T>
 
     public IReadOnlyCollection<Future<T>> Wait() => this.Wait(Timeout.InfiniteTimeSpan);
 
-    public IReadOnlyCollection<Future<T>> Wait(TimeSpan timeout)
+    public IReadOnlyCollection<Future<T>> Wait(TimeSpan timeout, Action<IFutureAwaiterPolicy<T>>? beforeWait = null)
     {
         _lock.Acquire();
         var done = _futures
@@ -29,6 +29,7 @@ internal sealed partial class FirstCompletedPolicy<T> : IFutureAwaiterPolicy<T>
         // There are no completed futures, so listen to all of them
         var awaiter = new FirstCompletedAwaiter(this);
         _lock.Release();
+        beforeWait?.Invoke(this);
         _event.WaitOne(timeout);
         return awaiter.Done();
     }

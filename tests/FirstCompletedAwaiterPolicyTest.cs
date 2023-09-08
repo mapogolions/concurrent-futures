@@ -2,7 +2,6 @@ using Futures.Internal;
 
 namespace Futures.Tests;
 
-
 public class FirstCompletedAwaiterPolicyTest
 {
     [Fact]
@@ -11,15 +10,13 @@ public class FirstCompletedAwaiterPolicyTest
         // Arrange
         ICompletableFuture future1 = new Future();
         ICompletableFuture future2 = new Future();
-        var t = new Thread(() =>
-        {
-            Thread.Sleep(TimeSpan.FromMilliseconds(50));
-            future1.SetException(new InvalidOperationException());
-        });
+        var policy = new FirstCompletedPolicy<object>((Future)future1, (Future)future2);
+
+        void beforeWait(IFutureAwaiterPolicy<object> _) =>
+            new Thread(() => future1.SetException(new InvalidOperationException())).Start();
 
         // Act
-        t.Start();
-        var done = Future.Wait(FutureWaitPolicy.FirtCompleted, (Future)future1, (Future)future2);
+        var done = policy.Wait(Timeout.InfiniteTimeSpan, beforeWait);
 
         // Arrange
         Assert.Single(done);
@@ -32,35 +29,27 @@ public class FirstCompletedAwaiterPolicyTest
         // Arrange
         ICompletableFuture future1 = new Future();
         ICompletableFuture future2 = new Future();
-        var t = new Thread(() =>
-        {
-            Thread.Sleep(TimeSpan.FromMilliseconds(50));
-            future1.SetResult("foo");
-        });
+        var policy = new FirstCompletedPolicy<object>((Future)future1, (Future)future2);
+        void beforeWait(IFutureAwaiterPolicy<object> _) => new Thread(() => future1.SetResult("foo")).Start();
 
         // Act
-        t.Start();
-        var done = Future.Wait(FutureWaitPolicy.FirtCompleted, (Future)future1, (Future)future2);
+        var done = policy.Wait(Timeout.InfiniteTimeSpan, beforeWait);
 
         // Arrange
         Assert.Single(done);
     }
 
     [Fact]
-    public void ShouldNotAddFutureToCompletedCollection_WhenItIsCancelledBeforeWait()
+    public void ShouldAddCancelledFutureToCompletedCollection_OnlyWhenCancellationHasPropagated()
     {
         // Arrange
         ICompletableFuture future = new Future();
         future.Cancel();
-        var t = new Thread(() =>
-        {
-            Thread.Sleep(TimeSpan.FromMilliseconds(10));
-            future.Run();
-        });
-        t.Start();
+        var policy = new FirstCompletedPolicy<object>((Future)future);
+        void beforeWait(IFutureAwaiterPolicy<object> _) => new Thread(() => future.Run()).Start();
 
         // Act
-        var done = Future.Wait(FutureWaitPolicy.FirtCompleted, (Future)future);
+        var done = policy.Wait(Timeout.InfiniteTimeSpan, beforeWait);
 
         // Assert
         Assert.Single(done);
