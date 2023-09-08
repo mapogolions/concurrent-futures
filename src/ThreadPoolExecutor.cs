@@ -43,12 +43,11 @@ public class ThreadPoolExecutor
         lock (_shutdownLock)
         {
             _shutdown = true;
-            // TODO: add test that reproduces the issue
             _queue.Add(null); // wakeup threads
         }
         if (wait)
         {
-            foreach (var t in _threads) t.Join();
+            for (int i = 0; i < _spawns; i++) _threads[i].Join();
         }
     }
 
@@ -60,6 +59,8 @@ public class ThreadPoolExecutor
         t.Start(new WorkerArgs(this, _queue));
         _threads[_spawns++] = t;
     }
+
+    internal int SpawnedThreads => _spawns;
 
     private static void Worker(object? state)
     {
