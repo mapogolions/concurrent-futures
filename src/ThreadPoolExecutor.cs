@@ -39,11 +39,13 @@ public class ThreadPoolExecutor
 
     public void Shutdown(bool wait = true)
     {
-        if (_shutdown) return;
         lock (_shutdownLock)
         {
-            _shutdown = true;
-            _queue.Add(null); // wakeup threads
+            if (!_shutdown)
+            {
+                _shutdown = true;
+                _queue.Add(null); // wakeup threads
+            }
         }
         if (wait)
         {

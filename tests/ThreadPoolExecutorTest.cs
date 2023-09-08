@@ -3,6 +3,24 @@ namespace Futures.Tests;
 public class ThreadPoolExecutorTest
 {
     [Fact]
+    public void ShouldSupportMultipleShutdowns()
+    {
+        var executor = new ThreadPoolExecutor(4);
+        var future = executor.Submit<string>(s => (string)s!, "foo");
+        var t = new Thread(s =>
+        {
+            Thread.Sleep(TimeSpan.FromMilliseconds(200));
+            executor.Shutdown(wait: true);
+        });
+        t.Start();
+        executor.Shutdown(wait: false);
+        t.Join();
+
+        Assert.Equal("foo", future.GetResult());
+        Assert.Equal(1, executor.SpawnedThreads);
+    }
+
+    [Fact]
     public void ShutdownShouldWakeUpThreads()
     {
         var executor = new ThreadPoolExecutor(4);
