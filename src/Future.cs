@@ -22,7 +22,7 @@ public class Future<T> : ICompletableFuture<T>
         }
         if (_state is FutureState.Finished)
         {
-            var result = ResultUnsafe();
+            var result = GetResultUnsafe();
             Monitor.Exit(_mutex);
             return result;
         }
@@ -39,7 +39,7 @@ public class Future<T> : ICompletableFuture<T>
         }
         if (_state is FutureState.Finished)
         {
-            var result = ResultUnsafe();
+            var result = GetResultUnsafe();
             Monitor.Exit(_mutex);
             return result;
         }
@@ -61,7 +61,7 @@ public class Future<T> : ICompletableFuture<T>
         return state is FutureState.Cancelled || state is FutureState.CancellationPropagated;
     }
 
-    private T? ResultUnsafe() => _exception is null ? _result : throw _exception;
+    private T? GetResultUnsafe() => _exception is null ? _result : throw _exception;
 
     FutureState ICompletableFuture<T>.State => _state;
     void ILockable.Acquire() => Monitor.Enter(_mutex);
