@@ -2,6 +2,6 @@ namespace Futures;
 
 public enum FutureWaitPolicy
 {
-    FirtCompleted,
+    FirstCompleted,
     AllCompleted,
 }

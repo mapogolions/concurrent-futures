@@ -119,7 +119,7 @@ public class Future<T> : ICompletableFuture<T>
     {
         IFutureAwaiterPolicy<R> policy_ = policy switch
         {
-            FutureWaitPolicy.FirtCompleted => new FirstCompletedPolicy<R>(futures),
+            FutureWaitPolicy.FirstCompleted => new FirstCompletedPolicy<R>(futures),
             FutureWaitPolicy.AllCompleted => new AllCompletedPolicy<R>(futures),
             _ => throw new ArgumentOutOfRangeException()
         };

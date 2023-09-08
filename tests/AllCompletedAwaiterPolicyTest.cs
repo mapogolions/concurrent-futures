@@ -70,7 +70,7 @@ public class AllCompletedAwaiterPolicyTest
         future2.SetException(new InvalidOperationException());
 
         // Act
-        var done = Future.Wait(FutureWaitPolicy.FirtCompleted, (Future)future1, (Future)future2);
+        var done = Future.Wait(FutureWaitPolicy.AllCompleted, (Future)future1, (Future)future2);
 
         // Assert
         Assert.Equal(2, done.Count);

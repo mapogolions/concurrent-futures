@@ -64,7 +64,7 @@ public class FirstCompletedAwaiterPolicyTest
         future1.SetException(new InvalidOperationException());
 
         // Act
-        var done = Future.Wait(FutureWaitPolicy.FirtCompleted, (Future)future1, (Future)future2);
+        var done = Future.Wait(FutureWaitPolicy.FirstCompleted, (Future)future1, (Future)future2);
 
         // Assert
         Assert.Single(done);
@@ -79,7 +79,7 @@ public class FirstCompletedAwaiterPolicyTest
         future1.SetResult("foo");
 
         // Act
-        var done = Future.Wait(FutureWaitPolicy.FirtCompleted, (Future)future1, (Future)future2);
+        var done = Future.Wait(FutureWaitPolicy.FirstCompleted, (Future)future1, (Future)future2);
 
         // Assert
         Assert.Single(done);
