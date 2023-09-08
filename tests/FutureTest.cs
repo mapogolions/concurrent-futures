@@ -42,15 +42,11 @@ public class FutureTest
     {
         // Arrange
         ICompletableFuture future = new Future();
-        var t = new Thread(() =>
-        {
-            Thread.Sleep(TimeSpan.FromMilliseconds(10));
-            future.SetException(new InvalidOperationException());
-        });
-        t.Start();
+        static void beforeWait(ICompletableFuture<object> future) =>
+            new Thread(() => future.SetException(new InvalidOperationException())).Start();
 
         // Act + Assert
-        Assert.Throws<InvalidOperationException>(() => future.GetResult());
+        Assert.Throws<InvalidOperationException>(() => future.GetResult(Timeout.InfiniteTimeSpan, beforeWait));
     }
 
     [Fact]
@@ -58,15 +54,11 @@ public class FutureTest
     {
         // Arrange
         ICompletableFuture future = new Future();
-        var t = new Thread(() =>
-        {
-            Thread.Sleep(TimeSpan.FromMilliseconds(10));
-            future.SetResult("foo");
-        });
-        t.Start();
+        static void beforeWait(ICompletableFuture<object> future) =>
+            new Thread(() => future.SetResult("foo")).Start();
 
         // Act
-        var result = future.GetResult();
+        var result = future.GetResult(Timeout.InfiniteTimeSpan, beforeWait);
 
         // Assert
         Assert.Equal("foo", result);

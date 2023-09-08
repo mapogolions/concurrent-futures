@@ -1,5 +1,4 @@
-﻿using System.ComponentModel;
-using Futures.Internal;
+﻿using Futures.Internal;
 
 namespace Futures;
 
@@ -11,9 +10,10 @@ public class Future<T> : ICompletableFuture<T>
     private readonly Mutex _mutex = new();
     private readonly List<IFutureAwaiter<T>> _awaiters = new();
 
-    public T? GetResult() => GetResult(Timeout.InfiniteTimeSpan);
+    public T? GetResult() => ((ICompletableFuture<T>)this).GetResult(Timeout.InfiniteTimeSpan, null);
+    public T? GetResult(TimeSpan timeout) => ((ICompletableFuture<T>)this).GetResult(timeout, null);
 
-    public T? GetResult(TimeSpan timeout)
+    T? ICompletableFuture<T>.GetResult(TimeSpan timeout, Action<ICompletableFuture<T>>? beforeWait)
     {
         Monitor.Enter(_mutex);
         if (_state is FutureState.Cancelled || _state is FutureState.CancellationPropagated)
@@ -27,6 +27,9 @@ public class Future<T> : ICompletableFuture<T>
             return result;
         }
 
+        // `beforeWait` was introduced for testing purposes only.
+        // This helps to write reliable tests that do not depend on context switching between threads.
+        beforeWait?.Invoke(this);
         // Pending or Running => wait
         Monitor.Wait(_mutex, timeout);
 
