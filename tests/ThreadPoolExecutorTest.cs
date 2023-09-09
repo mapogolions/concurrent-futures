@@ -3,6 +3,41 @@ namespace Futures.Tests;
 public class ThreadPoolExecutorTest
 {
     [Fact]
+    public void ShouldInferFutureType()
+    {
+        // Arrange
+        var executor = new ThreadPoolExecutor(4);
+        var f1 = executor.Submit(s => s!, "foo");
+        var f2 = executor.Submit(_ => "foo", null);
+        var f3 = executor.Submit<object>(_ => "foo", null);
+
+        // Act
+        executor.Shutdown();
+
+        // Assert
+        Assert.IsType<Future>(f1);
+        Assert.IsType<Future<string>>(f2);
+        Assert.IsType<Future<object>>(f3);
+    }
+
+    [Fact]
+    public void ShouldWorkWithFuturesWithDifferentReturnTypes()
+    {
+        // Arrange
+        var executor = new ThreadPoolExecutor(4);
+        var f1 = executor.Submit<object>(s => (string)s!, "foo");
+        var f2 = executor.Submit<object>(_ => 8, null);
+
+        // Act
+        var done = Future.Wait(FutureWaitPolicy.AllCompleted, f1, f2);
+
+        // Assert
+        Assert.Equal(2, done.Count);
+        Assert.Equal("foo", f1.GetResult());
+        Assert.Equal(8, f2.GetResult());
+    }
+
+    [Fact]
     public void ShouldSupportMultipleShutdowns()
     {
         // Arrange

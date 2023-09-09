@@ -114,7 +114,10 @@ public class Future<T> : ICompletableFuture<T>
         Monitor.PulseAll(_mutex);
         Monitor.Exit(_mutex);
     }
+}
 
+public sealed class Future : Future<object>, ICompletableFuture
+{
     public static IReadOnlyCollection<Future<R>> Wait<R>(FutureWaitPolicy policy, params Future<R>[] futures)
     {
         IFutureAwaiterPolicy<R> policy_ = policy switch
@@ -125,6 +128,10 @@ public class Future<T> : ICompletableFuture<T>
         };
         return policy_.Wait();
     }
-}
 
-public class Future : Future<object>, ICompletableFuture {}
+    public static IReadOnlyCollection<Future> Wait(FutureWaitPolicy policy, params Future[] futures)
+    {
+        var done = Wait<object>(policy, futures);
+        return done.Cast<Future>().ToArray();
+    }
+}

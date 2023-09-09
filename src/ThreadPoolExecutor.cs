@@ -21,7 +21,7 @@ public class ThreadPoolExecutor
         _threads = new Thread[maxWorkers];
     }
 
-    public Future<T> Submit<T>(Func<object?, T> callback, object? state)
+    public Future<T> Submit<T>(Func<object?, T> callback, T? state)
     {
         lock(_shutdownLock)
         {
@@ -31,6 +31,22 @@ public class ThreadPoolExecutor
             }
             var future = new Future<T>();
             var item = new WorkItem<T>(future, callback, state);
+            _queue.Add(item.Run);
+            this.Spawn();
+            return future;
+        }
+    }
+
+    public Future Submit(Func<object?, object> callback, object? state)
+    {
+        lock (_shutdownLock)
+        {
+            if (_shutdown)
+            {
+                throw new InvalidOperationException("cannot schedule new future");
+            }
+            var future = new Future();
+            var item = new WorkItem<object>(future, callback, state);
             _queue.Add(item.Run);
             this.Spawn();
             return future;
