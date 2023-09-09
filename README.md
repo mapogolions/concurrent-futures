@@ -2,7 +2,7 @@
 
 This project was born as an attempt to mimic the `concurrent.futures` python package.
 
-### Example
+#### Example
 ```cs
 using System.Net;
 using Futures;
