@@ -21,7 +21,7 @@ public class ThreadPoolExecutor
         _threads = new Thread[maxWorkers];
     }
 
-    public Future<T> Submit<T>(Func<object?, T> callback, T? state)
+    public Future<T> Submit<T>(Func<object?, T> callback, object? state)
     {
         lock(_shutdownLock)
         {
