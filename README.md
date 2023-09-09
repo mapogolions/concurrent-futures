@@ -1,6 +1,6 @@
 ### Concurrent Futures
 
-This project was born as an attempt to mimic the `concurrent.futures` python package.
+This project was born as an attempt to mimic the [`concurrent.futures` python package.](https://docs.python.org/3/library/concurrent.futures.html)
 
 #### Example
 ```cs
@@ -22,8 +22,8 @@ using var httpClient = new HttpClient() { Timeout = TimeSpan.FromSeconds(4) };
 var futures = sources
     .Select(x => executor.Submit<HttpStatusCode>(s => Do(httpClient, (string)s!), x))
     .ToArray();
-var results = Future.Wait(FutureWaitPolicy.AllCompleted, futures);
-foreach (var future in futures)
+var done = Future.Wait(FutureWaitPolicy.AllCompleted, futures);
+foreach (var future in done)
 {
     try
     {
@@ -43,5 +43,3 @@ static HttpStatusCode Do(HttpClient httpClient, string requestUri)
     return responseMessage.StatusCode;
 }
 ```
-
-[Follow the link for more details](https://docs.python.org/3/library/concurrent.futures.html)
