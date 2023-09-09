@@ -3,7 +3,7 @@ using Futures.Internal;
 
 namespace Futures;
 
-public class ThreadPoolExecutor
+public class ThreadPoolExecutor : IDisposable
 {
     private readonly int _maxWorkers;
     private bool _shutdown = false;
@@ -119,5 +119,10 @@ public class ThreadPoolExecutor
                 return;
             }
         }
+    }
+
+    public void Dispose()
+    {
+        this.Shutdown();
     }
 }
