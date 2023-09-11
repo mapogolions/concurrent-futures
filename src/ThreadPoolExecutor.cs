@@ -80,10 +80,27 @@ public class ThreadPoolExecutor : IDisposable
 
     internal int SpawnedThreads => _spawns;
 
+    internal ThreadPoolAwaiterDelegate GetThreadPoolAwaiter()
+    {
+        return NewThreadPoolAwaiter(_threads);
+        static ThreadPoolAwaiterDelegate NewThreadPoolAwaiter(IReadOnlyCollection<Thread> threads)
+        {
+            return timeout =>
+            {
+                foreach (var t in threads)
+                {
+                    if (t is null || t.Join(timeout)) continue;
+                    return false;
+                }
+                return true;
+            };
+        };
+    }
+
     private static void Worker(object? state)
     {
         var (executorRef, queue) = (WorkerArgs)state!;
-        ThreadPoolExecutor? executor = null;
+        object? target = null;
         while (true)
         {
             if (queue.TryTake(out var action))
@@ -97,12 +114,13 @@ public class ThreadPoolExecutor : IDisposable
             else
             {
                 // We are here because queue is empty
-                if (executorRef.TryGetTarget(out executor))
+                target = executorRef.Target;
+                if (target is not null)
                 {
                     // We try to signal executor that the current thread is not busy
                     // This helps prevent new threads from being created too early.
-                    executor._sem.Release();
-                    executor = null;
+                    ((ThreadPoolExecutor)target)._sem.Release();
+                    target = null;
                 }
                 // block until a new element is pushed onto the queue
                 action = queue.Take();
@@ -112,12 +130,13 @@ public class ThreadPoolExecutor : IDisposable
                     continue;
                 }
             }
-
-            if (!executorRef.TryGetTarget(out executor) || executor._shutdown)
+            target = executorRef.Target;
+            if (target is null || ((ThreadPoolExecutor)target)._shutdown)
             {
                 queue.Add(null);
                 return;
             }
+            target = null;
         }
     }
 

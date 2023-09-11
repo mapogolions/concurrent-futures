@@ -6,14 +6,14 @@ internal sealed class WorkerArgs
 {
     public WorkerArgs(ThreadPoolExecutor executor, BlockingCollection<Action?> queue)
     {
-        ExecutorRef = new WeakReference<ThreadPoolExecutor>(executor);
+        ExecutorRef = new WeakReference(executor);
         Queue = queue;
     }
 
-    public WeakReference<ThreadPoolExecutor> ExecutorRef { get; }
+    public WeakReference ExecutorRef { get; }
     public BlockingCollection<Action?> Queue { get; }
 
-    public void Deconstruct(out WeakReference<ThreadPoolExecutor> executorRef, out BlockingCollection<Action?> queue)
+    public void Deconstruct(out WeakReference executorRef, out BlockingCollection<Action?> queue)
     {
         executorRef = ExecutorRef;
         queue = Queue;
