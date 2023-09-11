@@ -80,23 +80,6 @@ public class ThreadPoolExecutor : IDisposable
 
     internal int SpawnedThreads => _spawns;
 
-    internal ThreadPoolAwaiterDelegate GetThreadPoolAwaiter()
-    {
-        return NewThreadPoolAwaiter(_threads);
-        static ThreadPoolAwaiterDelegate NewThreadPoolAwaiter(IReadOnlyCollection<Thread> threads)
-        {
-            return timeout =>
-            {
-                foreach (var t in threads)
-                {
-                    if (t is null || t.Join(timeout)) continue;
-                    return false;
-                }
-                return true;
-            };
-        };
-    }
-
     private static void Worker(object? state)
     {
         var (executorRef, queue) = (WorkerArgs)state!;

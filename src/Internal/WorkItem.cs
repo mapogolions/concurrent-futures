@@ -1,7 +1,5 @@
 namespace Futures.Internal;
 
-internal delegate bool ThreadPoolAwaiterDelegate(TimeSpan timeout);
-
 internal sealed class WorkItem<T>
 {
     private readonly ICompletableFuture<T> _future;

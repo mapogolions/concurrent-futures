@@ -3,6 +3,31 @@ namespace Futures.Tests;
 public class ThreadPoolExecutorTest
 {
     [Fact]
+    public void SoftShutdownShouldWakeupWorkerThreads()
+    {
+        // Arrange
+        var executor = new ThreadPoolExecutor(4);
+        var futures = Enumerable.Range(1, 10)
+            .Select(x => executor.Submit(s =>
+            {
+                Thread.Sleep(TimeSpan.FromMilliseconds(20));
+                return (string)s!;
+            }, $"item-{x}"))
+            .ToArray();
+
+        Future.Wait(FutureWaitPolicy.AllCompleted, futures);
+
+        // Act
+        // increase a chance of blocking on `queue.Take()`
+        Thread.Sleep(TimeSpan.FromMilliseconds(200));
+        executor.Shutdown(wait: false);
+
+        // Assert
+        executor.Shutdown(wait: true); // join
+        Assert.True(true); // pass
+    }
+
+    [Fact]
     public void ShouldInferFutureType()
     {
         // Arrange
