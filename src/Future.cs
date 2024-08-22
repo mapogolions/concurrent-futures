@@ -34,7 +34,9 @@ public class Future<T> : ICompletableFuture<T>
         beforeWait?.Invoke(this);
 
         // Pending or Running => wait
+        // sleep & release mutex
         Monitor.Wait(_mutex, timeout);
+        // wake up (by PullseAll or timeout) & acquire mutex
 
         if (!TryGetResulOrExceptionUnsafe(out result, out ex))
         {
@@ -80,6 +82,7 @@ public class Future<T> : ICompletableFuture<T>
         Monitor.Enter(_mutex);
         try
         {
+            // There should be no way to cancel a running future
             if (_state is FutureState.Pending)
             {
                 _state = FutureState.Cancelled;
