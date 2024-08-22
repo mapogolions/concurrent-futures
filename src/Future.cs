@@ -16,52 +16,83 @@ public class Future<T> : ICompletableFuture<T>
     T? ICompletableFuture<T>.GetResult(TimeSpan timeout, Action<ICompletableFuture<T>>? beforeWait)
     {
         Monitor.Enter(_mutex);
-        if (_state is FutureState.Cancelled || _state is FutureState.CancellationPropagated)
+        if (TryGetResulOrExceptionUnsafe(out var result, out Exception? ex))
         {
-            throw new CancelledFutureException();
-        }
-        if (_state is FutureState.Finished)
-        {
-            var result = GetResultUnsafe();
-            Monitor.Exit(_mutex);
-            return result;
+            try
+            {
+                if (ex != null) throw ex;
+                return result;
+            }
+            finally
+            {
+                Monitor.Exit(_mutex);
+            }
         }
 
         // `beforeWait` was introduced for testing purposes only.
         // This helps to write reliable tests that do not depend on context switching between threads.
         beforeWait?.Invoke(this);
+
         // Pending or Running => wait
         Monitor.Wait(_mutex, timeout);
 
+        if (!TryGetResulOrExceptionUnsafe(out result, out ex))
+        {
+            ex = new TimeoutException();
+        }
+        try
+        {
+            if (ex != null) throw ex;
+            return result;
+        }
+        finally
+        {
+            Monitor.Exit(_mutex);
+        }
+    }
+
+    private bool TryGetResulOrExceptionUnsafe(out T? result, out Exception? ex)
+    {
+        result = default;
+        ex = default;
         if (_state is FutureState.Cancelled || _state is FutureState.CancellationPropagated)
         {
-            throw new CancelledFutureException();
+            ex = new CancelledFutureException();
+            return true;
         }
         if (_state is FutureState.Finished)
         {
-            var result = GetResultUnsafe();
-            Monitor.Exit(_mutex);
-            return result;
+            if (_exception != null)
+            {
+                ex = _exception;
+            }
+            else
+            {
+                result = _result;
+            }
+            return true;
         }
-        throw new TimeoutException();
+        return false;
     }
 
     public bool Cancel()
     {
         Monitor.Enter(_mutex);
-        if (_state is FutureState.Pending)
+        try
         {
-            _state = FutureState.Cancelled;
-            Monitor.PulseAll(_mutex);
-            Monitor.Exit(_mutex);
-            return true;
+            if (_state is FutureState.Pending)
+            {
+                _state = FutureState.Cancelled;
+                Monitor.PulseAll(_mutex);
+                return true;
+            }
+            return _state is FutureState.Cancelled || _state is FutureState.CancellationPropagated;
         }
-        var state = _state;
-        Monitor.Exit(_mutex);
-        return state is FutureState.Cancelled || state is FutureState.CancellationPropagated;
+        finally
+        {
+            Monitor.Exit(_mutex);
+        }
     }
-
-    private T? GetResultUnsafe() => _exception is null ? _result : throw _exception;
 
     FutureState ICompletableFuture<T>.State => _state;
     void ILockable.Acquire() => Monitor.Enter(_mutex);
@@ -73,20 +104,25 @@ public class Future<T> : ICompletableFuture<T>
     bool ICompletableFuture<T>.Run()
     {
         Monitor.Enter(_mutex);
-        if (_state is FutureState.Pending)
+        try
         {
-            _state = FutureState.Running;
-            Monitor.Exit(_mutex);
-            return true;
+            if (_state is FutureState.Pending)
+            {
+                _state = FutureState.Running;
+                return true;
+            }
+            if (_state is FutureState.Cancelled)
+            {
+                _state = FutureState.CancellationPropagated;
+                _awaiters.ForEach(x => x.AddCancellation(this));
+                return false;
+            }
+            throw new InvalidFutureStateException($"Future in unexpected state: {_state}");
         }
-        if (_state is FutureState.Cancelled)
+        finally
         {
-            _state = FutureState.CancellationPropagated;
-            _awaiters.ForEach(x => x.AddCancellation(this));
-            Monitor.Exit(_mutex);
-            return false;
+            Monitor.Exit( _mutex);
         }
-        throw new InvalidFutureStateException($"Future in unexpected state: {_state}");
     }
 
     void ICompletableFuture<T>.SetResult(T result) => this.Finish(_ =>
@@ -106,13 +142,19 @@ public class Future<T> : ICompletableFuture<T>
     private void Finish(Action<Future<T>> f)
     {
         Monitor.Enter(_mutex);
-        if (_state is FutureState.Cancelled  || _state is FutureState.CancellationPropagated || _state is FutureState.Finished)
+        try
         {
-            throw new InvalidFutureStateException();
+            if (_state is FutureState.Cancelled  || _state is FutureState.CancellationPropagated || _state is FutureState.Finished)
+            {
+                throw new InvalidFutureStateException();
+            }
+            f(this);
+            Monitor.PulseAll(_mutex);
         }
-        f(this);
-        Monitor.PulseAll(_mutex);
-        Monitor.Exit(_mutex);
+        finally
+        {
+            Monitor.Exit(_mutex);
+        }
     }
 }
 
