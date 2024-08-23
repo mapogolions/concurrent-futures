@@ -159,7 +159,7 @@ public class Future<T> : ICompletableFuture<T>
         Monitor.Enter(_mutex);
         try
         {
-            if (_state is FutureState.Cancelled  || _state is FutureState.CancellationPropagated || _state is FutureState.Finished)
+            if (_state is not FutureState.Pending && _state is not FutureState.Running)
             {
                 throw new InvalidFutureStateException();
             }
