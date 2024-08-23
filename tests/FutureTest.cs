@@ -38,7 +38,47 @@ public class FutureTest
     }
 
     [Fact]
-    public void ShouldThrowException_WheFutureCompletedWithException()
+    public void ShouldBeAbleToGetResultFromDifferentThreads_WhenFutureCompletedWithException()
+    {
+        // Arrange
+        ICompletableFuture future = new Future();
+        static void beforeWait(ICompletableFuture<object> future) =>
+            new Thread(() => future.SetException(new InvalidOperationException())).Start();
+
+        // Act + Assert
+        Assert.Throws<InvalidOperationException>(() => future.GetResult(Timeout.InfiniteTimeSpan, beforeWait));
+
+        var mre = new ManualResetEvent(false);
+        new Thread(() =>
+        {
+            Assert.Throws<InvalidOperationException>(() => future.GetResult());
+            mre.Set();
+        }).Start();
+        mre.WaitOne();
+    }
+
+    [Fact]
+    public void ShouldBeAbleToGetResultFromDifferentThreads_WhenFutureCompletedWithValue()
+    {
+        // Arrange
+        ICompletableFuture future = new Future();
+        static void beforeWait(ICompletableFuture<object> future) =>
+            new Thread(() => future.SetResult(true)).Start();
+
+        // Act + Assert
+        Assert.Equal(true, future.GetResult(Timeout.InfiniteTimeSpan, beforeWait));
+
+        var mre = new ManualResetEvent(false);
+        new Thread(() =>
+        {
+            Assert.Equal(true, future.GetResult());
+            mre.Set();
+        }).Start();
+        mre.WaitOne();
+    }
+
+    [Fact]
+    public void GetResultShouldThrowException_WheFutureCompletedWithException()
     {
         // Arrange
         ICompletableFuture future = new Future();
@@ -50,7 +90,7 @@ public class FutureTest
     }
 
     [Fact]
-    public void ShouldReturnResult_WhenFutureCompletedWithValue()
+    public void GetResultShouldReturnResult_WhenFutureCompletedWithValue()
     {
         // Arrange
         ICompletableFuture future = new Future();

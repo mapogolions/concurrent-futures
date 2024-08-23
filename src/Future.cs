@@ -16,17 +16,9 @@ public class Future<T> : ICompletableFuture<T>
     T? ICompletableFuture<T>.GetResult(TimeSpan timeout, Action<ICompletableFuture<T>>? beforeWait)
     {
         Monitor.Enter(_mutex);
-        if (TryGetResulOrExceptionUnsafe(out var result, out Exception? ex))
+        if (TryGetResulOrException(out var result, out Exception? ex))
         {
-            try
-            {
-                if (ex != null) throw ex;
-                return result;
-            }
-            finally
-            {
-                Monitor.Exit(_mutex);
-            }
+            return ReturnOrThrow(result, ex, () => Monitor.Exit(_mutex));
         }
 
         // `beforeWait` was introduced for testing purposes only.
@@ -38,10 +30,15 @@ public class Future<T> : ICompletableFuture<T>
         Monitor.Wait(_mutex, timeout);
         // wake up (by PullseAll or timeout) & acquire mutex
 
-        if (!TryGetResulOrExceptionUnsafe(out result, out ex))
+        if (!TryGetResulOrException(out result, out ex))
         {
             ex = new TimeoutException();
         }
+        return ReturnOrThrow(result, ex, () => Monitor.Exit(_mutex));
+    }
+
+    private static T? ReturnOrThrow(T? result, Exception? ex, Action finilize)
+    {
         try
         {
             if (ex != null) throw ex;
@@ -49,11 +46,11 @@ public class Future<T> : ICompletableFuture<T>
         }
         finally
         {
-            Monitor.Exit(_mutex);
+            finilize();
         }
     }
 
-    private bool TryGetResulOrExceptionUnsafe(out T? result, out Exception? ex)
+    private bool TryGetResulOrException(out T? result, out Exception? ex)
     {
         result = default;
         ex = default;
