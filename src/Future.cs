@@ -105,11 +105,11 @@ public class Future<T> : ICompletableFuture<T>
     void ICompletableFuture<T>.Unsubscribe(IFutureAwaiter<T> awaiter) => _awaiters.Remove(awaiter);
 
     /**
-     *  ThreadPoolExecutor:
-     *   - Runs pending futures; once started, a future cannot be canceled.
-     *   - Propagates cancellation to awaiting threads.
-     *   - Signals when a future is in an invalid state for execution.
-    */
+     *  Used by ThreadPoolExecutor, which:
+     *   - Runs pending futures; once started, a future cannot be canceled
+     *   - Propagates cancellation to awaiting threads
+     *   - Signals when a future is in an invalid state for execution
+     */
     bool ICompletableFuture<T>.Run()
     {
         Monitor.Enter(_mutex);
@@ -134,6 +134,9 @@ public class Future<T> : ICompletableFuture<T>
         }
     }
 
+    /**
+     *  Used by ThreadPoolExecutor to set the result of execution for a running or pending future. 
+     */
     void ICompletableFuture<T>.SetResult(T result) => this.Finish(_ =>
     {
         _result = result;
@@ -141,6 +144,9 @@ public class Future<T> : ICompletableFuture<T>
         _awaiters.ForEach(x => x.AddResult(this));
     });
 
+    /**
+     *  Used by ThreadPoolExecutor to set the exception that occurs during execution for a running or pending future.
+     */
     void ICompletableFuture<T>.SetException(Exception exception) => this.Finish(_ =>
     {
         _exception = exception;
