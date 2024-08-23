@@ -24,11 +24,8 @@ public class Future<T> : ICompletableFuture<T>
         beforeWait?.Invoke(this);
         // Pending or Running
         Monitor.Wait(_mutex, timeout);
-        if (!TryGetResulOrException(out result, out ex))
-        {
-            ex = new TimeoutException();
-        }
-        return ReturnOrThrow(result, ex, finalize: () => Monitor.Exit(_mutex));
+        var finished = TryGetResulOrException(out result, out ex);
+        return ReturnOrThrow(result, finished ? ex : new TimeoutException(), finalize: () => Monitor.Exit(_mutex));
     }
 
     private static T? ReturnOrThrow(T? result, Exception? ex, Action finalize)
@@ -126,7 +123,7 @@ public class Future<T> : ICompletableFuture<T>
     }
 
     /**
-     *  Used by ThreadPoolExecutor to set the result of execution for a running or pending future. 
+     *  Used by ThreadPoolExecutor to set the result of execution for a running or pending future.
      */
     void ICompletableFuture<T>.SetResult(T result) => this.Finish(_ =>
     {
