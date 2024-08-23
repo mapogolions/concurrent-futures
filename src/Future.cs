@@ -18,26 +18,20 @@ public class Future<T> : ICompletableFuture<T>
         Monitor.Enter(_mutex);
         if (TryGetResulOrException(out var result, out Exception? ex))
         {
-            return ReturnOrThrow(result, ex, () => Monitor.Exit(_mutex));
+            return ReturnOrThrow(result, ex, finalize: () => Monitor.Exit(_mutex));
         }
-
-        // `beforeWait` was introduced for testing purposes only.
-        // This helps to write reliable tests that do not depend on context switching between threads.
+        // `beforeWait` was introduced for testing purposes only
         beforeWait?.Invoke(this);
-
-        // Pending or Running => wait
-        // sleep & release mutex
+        // Pending or Running
         Monitor.Wait(_mutex, timeout);
-        // wake up (by PullseAll or timeout) & acquire mutex
-
         if (!TryGetResulOrException(out result, out ex))
         {
             ex = new TimeoutException();
         }
-        return ReturnOrThrow(result, ex, () => Monitor.Exit(_mutex));
+        return ReturnOrThrow(result, ex, finalize: () => Monitor.Exit(_mutex));
     }
 
-    private static T? ReturnOrThrow(T? result, Exception? ex, Action finilize)
+    private static T? ReturnOrThrow(T? result, Exception? ex, Action finalize)
     {
         try
         {
@@ -46,7 +40,7 @@ public class Future<T> : ICompletableFuture<T>
         }
         finally
         {
-            finilize();
+            finalize();
         }
     }
 
