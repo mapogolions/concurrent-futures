@@ -38,7 +38,7 @@ public class FutureTest
     }
 
     [Fact]
-    public void ShouldThrowException_WhenGetResultOnCompletedFutureWithException()
+    public void ShouldThrowException_WheFutureCompletedWithException()
     {
         // Arrange
         ICompletableFuture future = new Future();
@@ -50,7 +50,7 @@ public class FutureTest
     }
 
     [Fact]
-    public void ShouldReturnResult_WhenGetResultOnCompletedFutureWithValue()
+    public void ShouldReturnResult_WhenFutureCompletedWithValue()
     {
         // Arrange
         ICompletableFuture future = new Future();
@@ -85,10 +85,11 @@ public class FutureTest
     }
 
     [Fact]
-    public void ShouldNotBeAbleToRunCancelledFuture()
+    public void ShouldNotBeAbleToRunCancelledFutureAndPropagateCancellation()
     {
         ICompletableFuture future = new Future();
         future.Cancel();
+        Assert.Equal(FutureState.Cancelled, future.State);
         Assert.False(future.Run());
         Assert.Equal(FutureState.CancellationPropagated, future.State);
     }
@@ -106,15 +107,15 @@ public class FutureTest
     public void CancellationShouldReturnTrue_WhenFutureCancelledAndCancellationPropagated()
     {
         ICompletableFuture future = new Future();
-        future.Cancel();
-        future.Run();
+        future.Cancel(); 
+        future.Run(); // propagate cancellation
 
         Assert.Equal(FutureState.CancellationPropagated, future.State);
         Assert.True(future.Cancel());
     }
 
     [Fact]
-    public void CancellationShouldReturnTrue_WhenFutureCancelled()
+    public void CancellationShouldReturnTrue_WhenFutureCancelled() // Idempotancy
     {
         ICompletableFuture future = new Future();
         future.Cancel();

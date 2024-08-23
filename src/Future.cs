@@ -104,6 +104,12 @@ public class Future<T> : ICompletableFuture<T>
     void ICompletableFuture<T>.Subscribe(IFutureAwaiter<T> awaiter) => _awaiters.Add(awaiter);
     void ICompletableFuture<T>.Unsubscribe(IFutureAwaiter<T> awaiter) => _awaiters.Remove(awaiter);
 
+    /**
+     *  ThreadPoolExecutor:
+     *   - Runs pending futures; once started, a future cannot be canceled.
+     *   - Propagates cancellation to awaiting threads.
+     *   - Signals when a future is in an invalid state for execution.
+    */
     bool ICompletableFuture<T>.Run()
     {
         Monitor.Enter(_mutex);
