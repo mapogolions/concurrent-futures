@@ -15,9 +15,9 @@ internal sealed class AllCompletedPolicy<T> : IFutureAwaiterPolicy<T>, IFutureAw
         _uncompleted = futures.Length;
     }
 
-    public void AddResult(Future<T> future) => this.Add(future);
-    public void AddException(Future<T> future) => this.Add(future);
-    public void AddCancellation(Future<T> future) => this.Add(future);
+    void IFutureAwaiter<T>.AddResult(Future<T> future) => this.Add(future);
+    void IFutureAwaiter<T>.AddException(Future<T> future) => this.Add(future);
+    void IFutureAwaiter<T>.AddCancellation(Future<T> future) => this.Add(future);
 
     private void Add(Future<T> _)
     {
