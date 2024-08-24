@@ -42,7 +42,6 @@ internal sealed class FirstCompletedPolicy<T> : IFutureAwaiterPolicy<T>, IFuture
                 subscribers.Add(future);
             }
         }
-        // There are no completed futures, so listen to all of them
         beforeWait?.Invoke(this);
         _awaiterCond.WaitOne(timeout);
         foreach (var subscriber in subscribers)
