@@ -36,17 +36,34 @@ public class FutureTest
         future.SetResult("foo");
         Assert.Throws<InvalidFutureStateException>(() => future.SetResult("foo"));
     }
-
+    
     [Fact]
-    public void ShouldBeAbleToGetResultFromDifferentThreads_WhenFutureCompletedWithException()
+    public void GetResultShouldThrowExceptionInDifferntThreads_WhenFutureHasBeenCancelled()
     {
         // Arrange
         ICompletableFuture future = new Future();
-        static void beforeWait(ICompletableFuture<object> future) =>
-            new Thread(() => future.SetException(new InvalidOperationException())).Start();
+        future.Cancel();
 
         // Act + Assert
-        Assert.Throws<InvalidOperationException>(() => future.GetResult(Timeout.InfiniteTimeSpan, beforeWait));
+        Assert.Throws<CancelledFutureException>(() => future.GetResult());
+        var mre = new ManualResetEvent(false);
+        new Thread(() =>
+        {
+            Assert.Throws<CancelledFutureException>(() => future.GetResult());
+            mre.Set();
+        }).Start();
+        mre.WaitOne();
+    }
+
+    [Fact]
+    public void ShouldBeAbleToGetResultInDifferentThreads_WhenFutureCompletedWithException()
+    {
+        // Arrange
+        ICompletableFuture future = new Future();
+        future.SetException(new InvalidOperationException());
+
+        // Act + Assert
+        Assert.Throws<InvalidOperationException>(() => future.GetResult());
 
         var mre = new ManualResetEvent(false);
         new Thread(() =>
@@ -58,15 +75,14 @@ public class FutureTest
     }
 
     [Fact]
-    public void ShouldBeAbleToGetResultFromDifferentThreads_WhenFutureCompletedWithValue()
+    public void ShouldBeAbleToGetResultInDifferentThreads_WhenFutureCompletedWithValue()
     {
         // Arrange
         ICompletableFuture future = new Future();
-        static void beforeWait(ICompletableFuture<object> future) =>
-            new Thread(() => future.SetResult(true)).Start();
+        future.SetResult(true);
 
         // Act + Assert
-        Assert.Equal(true, future.GetResult(Timeout.InfiniteTimeSpan, beforeWait));
+        Assert.Equal(true, future.GetResult());
 
         var mre = new ManualResetEvent(false);
         new Thread(() =>
@@ -75,6 +91,15 @@ public class FutureTest
             mre.Set();
         }).Start();
         mre.WaitOne();
+    }
+
+    [Fact]
+    public void GetResultShouldThrowException_WhenFutureHasBeenCancelled()
+    {
+
+        ICompletableFuture future = new Future();
+        future.Cancel();
+        Assert.Throws<CancelledFutureException>(() => future.GetResult());
     }
 
     [Fact]
