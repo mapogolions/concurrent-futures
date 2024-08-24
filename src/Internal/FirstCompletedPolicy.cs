@@ -28,19 +28,26 @@ internal sealed class FirstCompletedPolicy<T> : IFutureAwaiterPolicy<T>, IFuture
     public IReadOnlyCollection<Future<T>> Wait() => this.Wait(Timeout.InfiniteTimeSpan);
 
 
+    /**
+    *  We follow the Python approach and do NOT break the loop when the first completed future is found.
+    *  Instead, we continue iterating to find as many completed futures as possible.
+    */
     public IReadOnlyCollection<Future<T>> Wait(TimeSpan timeout, Action<IFutureAwaiterPolicy<T>>? beforeWait = null)
     {
         var done = new List<Future<T>>();
+        var subscribers = new List<ICompletableFuture<T>>();
         foreach (var future in _futures)
         {
-            /**
-            *  We follow the Python approach and do NOT break the loop when the first completed future is found.
-            *  Instead, we continue iterating to find as many completed futures as possible.
-            */
-            if (!((ICompletableFuture<T>)future).Subscribe(this)) done.Add(future);
+            if (((ICompletableFuture<T>)future).Subscribe(this))
+            {
+                subscribers.Add(future);
+                continue;
+            }
+            done.Add(future);
         }
         if (done.Count > 0)
         {
+            subscribers.ForEach(s => s.Unsubscribe(this));
             return done;
         }
         // There are no completed futures, so listen to all of them
