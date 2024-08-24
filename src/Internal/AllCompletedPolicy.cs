@@ -11,8 +11,6 @@ internal sealed class AllCompletedPolicy<T> : IFutureAwaiterPolicy<T>, IFutureAw
         _futures = futures.ToArray();
     }
 
-    public ICompletableFuture<T>[] Futures => _futures;
-
     public void AddResult(Future<T> future) => this.Add(future);
     public void AddException(Future<T> future) => this.Add(future);
     public void AddCancellation(Future<T> future) => this.Add(future);
@@ -33,10 +31,10 @@ internal sealed class AllCompletedPolicy<T> : IFutureAwaiterPolicy<T>, IFutureAw
 
     public IReadOnlyCollection<Future<T>> Wait(TimeSpan timeout, Action<IFutureAwaiterPolicy<T>>? beforeWait = null)
     {
-        var done = new List<ICompletableFuture<T>>();
-        foreach (var future in Futures)
+        var done = new List<Future<T>>();
+        foreach (var future in _futures)
         {
-            if (!future.Subscribe(this)) done.Add(future);
+            if (!((ICompletableFuture<T>)future).Subscribe(this)) done.Add(future);
         }
         _uncompleted = _futures.Length - done.Count;
         if (_uncompleted == 0)
@@ -45,9 +43,9 @@ internal sealed class AllCompletedPolicy<T> : IFutureAwaiterPolicy<T>, IFutureAw
         }
         beforeWait?.Invoke(this);
         _awaiterCond.WaitOne(timeout);
-        foreach (var future in Futures)
+        foreach (var future in _futures)
         {
-            future.Unsubscribe(this);
+            ((ICompletableFuture<T>)future).Unsubscribe(this);
         }
         return _futures;
     }
