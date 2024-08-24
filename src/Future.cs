@@ -86,21 +86,30 @@ public class Future<T> : ICompletableFuture<T>
     }
 
     FutureState ICompletableFuture<T>.State => _state;
-    void ILockable.Acquire() => Monitor.Enter(_mutex);
-    void ILockable.Release() => Monitor.Exit(_mutex);
 
+    /**
+     *  Used by IFutureAwaiter, which:
+     */
     bool ICompletableFuture<T>.Subscribe(IFutureAwaiter<T> awaiter)
     {
         Monitor.Enter(_mutex);
         try
         {
-            var finished = _state is FutureState.Finished || _state is FutureState.CancellationPropagated;
-            if (!finished)
+            if (_state is FutureState.CancellationPropagated)
             {
-                _awaiters.Add(awaiter);
+                awaiter.AddCancellation(this);
+                return false;
             }
-            return !finished;
-        } finally { Monitor.Exit(_mutex); }
+            if (_state is FutureState.Finished)
+            {
+                if (_exception is not null) awaiter.AddException(this);
+                else awaiter.AddResult(this);
+                return false;
+            }
+            _awaiters.Add(awaiter);
+            return true;
+        }
+        finally { Monitor.Exit(_mutex); }
     }
 
     bool ICompletableFuture<T>.Unsubscribe(IFutureAwaiter<T> awaiter)
@@ -108,13 +117,9 @@ public class Future<T> : ICompletableFuture<T>
         Monitor.Enter(_mutex);
         try
         {
-            var finished = _state is FutureState.Finished || _state is FutureState.CancellationPropagated;
-            if (finished)
-            {
-                _awaiters.Remove(awaiter);
-            }
-            return finished;
-        } finally { Monitor.Exit(_mutex); }
+            return _awaiters.Remove(awaiter);
+        }
+        finally { Monitor.Exit(_mutex); }
     }
 
     /**
@@ -141,10 +146,7 @@ public class Future<T> : ICompletableFuture<T>
             }
             throw new InvalidFutureStateException($"Future in unexpected state: {_state}");
         }
-        finally
-        {
-            Monitor.Exit( _mutex);
-        }
+        finally { Monitor.Exit( _mutex); }
     }
 
     /**
@@ -179,10 +181,7 @@ public class Future<T> : ICompletableFuture<T>
             f(this);
             Monitor.PulseAll(_mutex);
         }
-        finally
-        {
-            Monitor.Exit(_mutex);
-        }
+        finally { Monitor.Exit(_mutex); }
     }
 }
 

@@ -34,28 +34,20 @@ internal sealed class FirstCompletedPolicy<T> : IFutureAwaiterPolicy<T>, IFuture
     */
     public IReadOnlyCollection<Future<T>> Wait(TimeSpan timeout, Action<IFutureAwaiterPolicy<T>>? beforeWait = null)
     {
-        var done = new List<Future<T>>();
         var subscribers = new List<ICompletableFuture<T>>();
         foreach (var future in _futures)
         {
             if (((ICompletableFuture<T>)future).Subscribe(this))
             {
                 subscribers.Add(future);
-                continue;
             }
-            done.Add(future);
-        }
-        if (done.Count > 0)
-        {
-            subscribers.ForEach(s => s.Unsubscribe(this));
-            return done;
         }
         // There are no completed futures, so listen to all of them
         beforeWait?.Invoke(this);
         _awaiterCond.WaitOne(timeout);
-        foreach (var future in _futures)
+        foreach (var subscriber in subscribers)
         {
-            ((ICompletableFuture<T>)future).Unsubscribe(this);
+            subscriber.Unsubscribe(this);
         }
         return _completed;
     }

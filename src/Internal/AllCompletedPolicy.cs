@@ -1,4 +1,7 @@
+using System.Diagnostics;
+
 namespace Futures.Internal;
+
 internal sealed class AllCompletedPolicy<T> : IFutureAwaiterPolicy<T>, IFutureAwaiter<T>
 {
     private readonly object _awaiterLock = new();
@@ -9,6 +12,7 @@ internal sealed class AllCompletedPolicy<T> : IFutureAwaiterPolicy<T>, IFutureAw
     public AllCompletedPolicy(params Future<T>[] futures)
     {
         _futures = futures.ToArray();
+        _uncompleted = futures.Length;
     }
 
     public void AddResult(Future<T> future) => this.Add(future);
@@ -31,22 +35,29 @@ internal sealed class AllCompletedPolicy<T> : IFutureAwaiterPolicy<T>, IFutureAw
 
     public IReadOnlyCollection<Future<T>> Wait(TimeSpan timeout, Action<IFutureAwaiterPolicy<T>>? beforeWait = null)
     {
-        var done = new List<Future<T>>();
+        var subscribers = new List<ICompletableFuture<T>>();
         foreach (var future in _futures)
         {
-            if (!((ICompletableFuture<T>)future).Subscribe(this)) done.Add(future);
+            if (((ICompletableFuture<T>)future).Subscribe(this))
+            {
+                subscribers.Add(future);
+            }
         }
-        _uncompleted = _futures.Length - done.Count;
-        if (_uncompleted == 0)
+
+        // kind of optimization
+        if (subscribers.Count == 0)
         {
+            Debug.Assert(_uncompleted == 0);
             return _futures;
         }
+
         beforeWait?.Invoke(this);
         _awaiterCond.WaitOne(timeout);
-        foreach (var future in _futures)
+        foreach (var subscriber in subscribers)
         {
-            ((ICompletableFuture<T>)future).Unsubscribe(this);
+            subscriber.Unsubscribe(this);
         }
         return _futures;
+
     }
 }

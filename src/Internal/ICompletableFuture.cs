@@ -1,6 +1,6 @@
 namespace Futures.Internal;
 
-internal interface ICompletableFuture<T> : ILockable
+internal interface ICompletableFuture<T>
 {
     T? GetResult();
     T? GetResult(TimeSpan timeout);
