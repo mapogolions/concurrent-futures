@@ -1,37 +1,54 @@
 namespace Futures.Internal;
-
-internal sealed partial class AllCompletedPolicy<T> : IFutureAwaiterPolicy<T>
+internal sealed class AllCompletedPolicy<T> : IFutureAwaiterPolicy<T>, IFutureAwaiter<T>
 {
-    private readonly ManualResetEvent _event = new(false);
-    private readonly GroupLock _lock;
-    private readonly ICompletableFuture<T>[] _futures;
+    private readonly object _awaiterLock = new();
+    private readonly ManualResetEvent _awaiterCond = new(false);
+    private readonly Future<T>[] _futures;
+    private int _uncompleted;
 
     public AllCompletedPolicy(params Future<T>[] futures)
     {
         _futures = futures.ToArray();
-        _lock = new GroupLock(_futures);
+    }
+
+    public ICompletableFuture<T>[] Futures => _futures;
+
+    public void AddResult(Future<T> future) => this.Add(future);
+    public void AddException(Future<T> future) => this.Add(future);
+    public void AddCancellation(Future<T> future) => this.Add(future);
+
+    private void Add(Future<T> _)
+    {
+        lock(_awaiterLock)
+        {
+            _uncompleted--;
+            if (_uncompleted == 0)
+            {
+                _awaiterCond.Set();
+            }
+        }
     }
 
     public IReadOnlyCollection<Future<T>> Wait() => this.Wait(Timeout.InfiniteTimeSpan);
 
     public IReadOnlyCollection<Future<T>> Wait(TimeSpan timeout, Action<IFutureAwaiterPolicy<T>>? beforeWait = null)
     {
-        _lock.Acquire();
-        var done = _futures
-            .Where(x => x.State is FutureState.Finished || x.State is FutureState.CancellationPropagated)
-            .Cast<Future<T>>()
-            .ToList();
-        if (done.Count == _futures.Length)
+        var done = new List<ICompletableFuture<T>>();
+        foreach (var future in Futures)
         {
-            _lock.Release();
-            return done;
+            if (!future.Subscribe(this)) done.Add(future);
         }
-        var uncompleted = done.Count == 0 ? _futures : _futures.Except(done).ToArray();
-        var awaiter = new AllCompletedAwaiter(this, uncompleted);
-        _lock.Release();
+        _uncompleted = _futures.Length - done.Count;
+        if (_uncompleted == 0)
+        {
+            return _futures;
+        }
         beforeWait?.Invoke(this);
-        _event.WaitOne(timeout);
-        done.AddRange(awaiter.Done());
-        return done;
+        _awaiterCond.WaitOne(timeout);
+        foreach (var future in Futures)
+        {
+            future.Unsubscribe(this);
+        }
+        return _futures;
     }
 }

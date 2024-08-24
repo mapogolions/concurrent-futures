@@ -89,8 +89,33 @@ public class Future<T> : ICompletableFuture<T>
     void ILockable.Acquire() => Monitor.Enter(_mutex);
     void ILockable.Release() => Monitor.Exit(_mutex);
 
-    void ICompletableFuture<T>.Subscribe(IFutureAwaiter<T> awaiter) => _awaiters.Add(awaiter);
-    void ICompletableFuture<T>.Unsubscribe(IFutureAwaiter<T> awaiter) => _awaiters.Remove(awaiter);
+    bool ICompletableFuture<T>.Subscribe(IFutureAwaiter<T> awaiter)
+    {
+        Monitor.Enter(_mutex);
+        try
+        {
+            var finished = _state is FutureState.Finished || _state is FutureState.CancellationPropagated;
+            if (!finished)
+            {
+                _awaiters.Add(awaiter);
+            }
+            return !finished;
+        } finally { Monitor.Exit(_mutex); }
+    }
+
+    bool ICompletableFuture<T>.Unsubscribe(IFutureAwaiter<T> awaiter)
+    {
+        Monitor.Enter(_mutex);
+        try
+        {
+            var finished = _state is FutureState.Finished || _state is FutureState.CancellationPropagated;
+            if (finished)
+            {
+                _awaiters.Remove(awaiter);
+            }
+            return finished;
+        } finally { Monitor.Exit(_mutex); }
+    }
 
     /**
      *  Used by ThreadPoolExecutor, which:
