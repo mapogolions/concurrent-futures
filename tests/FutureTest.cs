@@ -38,7 +38,7 @@ public class FutureTest
     }
     
     [Fact]
-    public void GetResultShouldThrowExceptionInDifferntThreads_WhenFutureHasBeenCancelled()
+    public void GetResultShouldReleaseLockAfterThrowingCancelledFutureException()
     {
         // Arrange
         ICompletableFuture future = new Future();
@@ -56,7 +56,7 @@ public class FutureTest
     }
 
     [Fact]
-    public void ShouldBeAbleToGetResultInDifferentThreads_WhenFutureCompletedWithException()
+    public void GetResultShouldReleaseLockAfterThrowingExceptionThatOccursDuringExecution()
     {
         // Arrange
         ICompletableFuture future = new Future();
