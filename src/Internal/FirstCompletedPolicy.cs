@@ -43,6 +43,7 @@ internal sealed class FirstCompletedPolicy<T> : IFutureAwaiterPolicy<T>, IFuture
             }
         }
         beforeWait?.Invoke(this);
+        // at least one future should be completed to step over
         _awaiterCond.WaitOne(timeout);
         foreach (var subscriber in subscribers)
         {
