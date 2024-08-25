@@ -85,6 +85,26 @@ public class Future<T> : ICompletableFuture<T>
         }
     }
 
+    public bool Running()
+    {
+        Monitor.Enter(_mutex);
+        try
+        {
+            return _state is FutureState.Running;
+        }
+        finally { Monitor.Exit(_mutex); }
+    }
+
+    public bool Cancelled()
+    {
+        Monitor.Enter(_mutex);
+        try
+        {
+            return _state is FutureState.Cancelled || _state is FutureState.CancellationPropagated;
+        }
+        finally { Monitor.Exit(_mutex); }
+    }
+
     FutureState ICompletableFuture<T>.State => _state;
 
     /**
@@ -193,6 +213,7 @@ public sealed class Future : Future<object>, ICompletableFuture
         {
             FutureWaitPolicy.FirstCompleted => new FirstCompletedPolicy<R>(futures),
             FutureWaitPolicy.AllCompleted => new AllCompletedPolicy<R>(futures),
+            FutureWaitPolicy.FirstException => new FirstExceptionPolicy<R>(futures),
             _ => throw new ArgumentOutOfRangeException()
         };
         return policy_.Wait();
