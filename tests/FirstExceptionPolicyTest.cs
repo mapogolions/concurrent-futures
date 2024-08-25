@@ -2,17 +2,30 @@ using Futures.Internal;
 
 namespace Futures.Tests;
 
-public class AllCompletedAwaiterPolicyTest
+public class FirstExceptionPolicyTest
 {
     [Fact]
-    public void ShouldWait_WhenSomeFuturesAreCompletedBeforeWait()
+    public void ShouldWaitAllFuturesWhenThereIsNoCompletionWithException()
     {
         // Arrange
         ICompletableFuture future1 = new Future();
-        future1.SetResult("foo");
         ICompletableFuture future2 = new Future();
-        var policy = new AllCompletedPolicy<object>((Future)future1, (Future)future2);
-        void beforeWait(IFutureAwaiterPolicy<object> _) => new Thread(() => future2.SetResult("bar")).Start();
+        var policy = new FirstExceptionPolicy<object>((Future)future1, (Future)future2);
+
+        void beforeWait(IFutureAwaiterPolicy<object> _)
+        {
+            new Thread(() => 
+            {
+                Thread.Sleep(TimeSpan.FromMilliseconds(200));
+                future1.SetResult("foo");
+            }).Start();
+
+            new Thread(() => 
+            {
+                Thread.Sleep(TimeSpan.FromMilliseconds(300));
+                future2.SetResult("bar");
+            }).Start();
+        }
 
         // Act
         var done = policy.Wait(Timeout.InfiniteTimeSpan, beforeWait);
@@ -22,25 +35,27 @@ public class AllCompletedAwaiterPolicyTest
     }
 
     [Fact]
-    public void ShouldWaitUntilAllFuturesAreCompletedWithResultOrException()
+    public void ShouldWaitUntilFirstCompletionWithExceptionOccurs()
     {
         // Arrange
         ICompletableFuture future1 = new Future();
         ICompletableFuture future2 = new Future();
-        var policy = new AllCompletedPolicy<object>((Future)future1, (Future)future2);
+        var policy = new FirstExceptionPolicy<object>((Future)future1, (Future)future2);
 
         void beforeWait(IFutureAwaiterPolicy<object> _)
         {
-            new Thread(() => future1.SetResult("foo")).Start();
-            new Thread(() => future2.SetException(new InvalidOperationException())).Start();
+            new Thread(() => 
+            {
+                Thread.Sleep(TimeSpan.FromMilliseconds(200));
+                future2.SetException(new InvalidOperationException());
+            }).Start();
         }
-
 
         // Act
         var done = policy.Wait(Timeout.InfiniteTimeSpan, beforeWait);
 
         // Assert
-        Assert.Equal(2, done.Count);
+        Assert.Single(done);
     }
 
     [Fact]
@@ -49,7 +64,7 @@ public class AllCompletedAwaiterPolicyTest
         // Arrange
         ICompletableFuture future = new Future();
         future.Cancel();
-        var policy = new AllCompletedPolicy<object>((Future)future);
+        var policy = new FirstExceptionPolicy<object>((Future)future);
 
         void beforeWait(IFutureAwaiterPolicy<object> _) => new Thread(() => future.Run()).Start();
 
@@ -70,7 +85,7 @@ public class AllCompletedAwaiterPolicyTest
         future2.SetException(new InvalidOperationException());
 
         // Act
-        var done = Future.Wait(FutureWaitPolicy.AllCompleted, (Future)future1, (Future)future2);
+        var done = Future.Wait(FutureWaitPolicy.FirstException, (Future)future1, (Future)future2);
 
         // Assert
         Assert.Equal(2, done.Count);
@@ -86,7 +101,7 @@ public class AllCompletedAwaiterPolicyTest
         future2.SetResult("bar");
 
         // Act
-        var done = Future.Wait(FutureWaitPolicy.AllCompleted, (Future)future1, (Future)future2);
+        var done = Future.Wait(FutureWaitPolicy.FirstException, (Future)future1, (Future)future2);
 
         // Assert
         Assert.Equal(2, done.Count);
