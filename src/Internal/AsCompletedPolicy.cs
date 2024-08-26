@@ -1,6 +1,3 @@
-using System.Collections;
-using System.Diagnostics;
-
 namespace Futures.Internal;
 
 internal sealed class AsCompletedPolicy<T> : IFutureAwaiterPolicy<T>, IFutureAwaiter<T>
