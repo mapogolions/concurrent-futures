@@ -57,7 +57,8 @@ internal sealed class AsCompletedPolicy<T> : IFutureAwaiterPolicy<T>, IFutureAwa
             if (_uncompleted == 0)
             {
                 subscribers.ForEach(s => s.Unsubscribe(this));
-                break;
+                yield return _completed;
+                yield break;
             }
             beforeWait?.Invoke(this);
             _awaiterCond.WaitOne(timeout);
@@ -66,9 +67,9 @@ internal sealed class AsCompletedPolicy<T> : IFutureAwaiterPolicy<T>, IFutureAwa
             {
                 _awaiterCond.Reset();
                 chunk = _completed.ToArray();
+                _completed.Clear();
             }
             yield return chunk!;
         }
-        yield return _completed;
     }
 }
