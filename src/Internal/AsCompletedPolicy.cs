@@ -36,16 +36,16 @@ internal sealed class AsCompletedPolicy<T> : IFutureAwaiterPolicy<T>
 
         while (true)
         {
-            if (awaiter.Uncompleted == 0)
-            {
-                subscribers.ForEach(s => s.Unsubscribe(awaiter));
-                yield return awaiter.Done;
-                yield break;
-            }
             beforeWait?.Invoke(this);
             awaiter.Wait(timeout);
-            IReadOnlyCollection<Future<T>> chunk = awaiter.Next();
-            yield return chunk;
+            if (awaiter.MoveNext(out var done))
+            {
+                yield return done;
+                continue;
+            }
+            subscribers.ForEach(s => s.Unsubscribe(awaiter));
+            yield return done;
+            yield break;
         }
     }
 
@@ -79,18 +79,19 @@ internal sealed class AsCompletedPolicy<T> : IFutureAwaiterPolicy<T>
 
         public bool Wait(TimeSpan timeout) => _cond.WaitOne(timeout);
 
-        public IReadOnlyCollection<Future<T>> Next()
+        public bool MoveNext(out IReadOnlyCollection<Future<T>> done)
         {
             lock (_lock)
             {
-                _cond.Reset();
-                var chunk = _completed.ToArray();
+                var hasNext = _uncompleted != 0;
+                if (hasNext)
+                {
+                    _cond.Reset();
+                }
+                done = _completed.ToArray();
                 _completed.Clear();
-                return chunk;
+                return hasNext;
             }
         }
-
-        public int Uncompleted => _uncompleted;
-        public IReadOnlyCollection<Future<T>> Done => _completed;
     }
 }
