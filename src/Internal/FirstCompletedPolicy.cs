@@ -1,28 +1,12 @@
 namespace Futures.Internal;
 
-internal sealed class FirstCompletedPolicy<T> : IFutureAwaiterPolicy<T>, IFutureAwaiter<T>
+internal sealed class FirstCompletedPolicy<T> : IFutureAwaiterPolicy<T>
 {
-    private readonly object _awaiterLock = new();
-    private readonly ManualResetEvent _awaiterCond = new(false);
-    private readonly List<Future<T>> _completed = new();
     private readonly Future<T>[] _futures;
 
     public FirstCompletedPolicy(params Future<T>[] futures)
     {
         _futures = futures.ToArray();
-    }
-
-    void IFutureAwaiter<T>.AddResult(Future<T> future) => this.Add(future);
-    void IFutureAwaiter<T>.AddException(Future<T> future) => this.Add(future);
-    void IFutureAwaiter<T>.AddCancellation(Future<T> future) => this.Add(future);
-
-    public void Add(Future<T> future)
-    {
-        lock(_awaiterLock)
-        {
-            _completed.Add(future);
-            _awaiterCond.Set();
-        }
     }
 
     public IReadOnlyCollection<Future<T>> Wait() => this.Wait(Timeout.InfiniteTimeSpan);
@@ -34,10 +18,11 @@ internal sealed class FirstCompletedPolicy<T> : IFutureAwaiterPolicy<T>, IFuture
     */
     public IReadOnlyCollection<Future<T>> Wait(TimeSpan timeout, Action<IFutureAwaiterPolicy<T>>? beforeWait = null)
     {
+        var awaiter = new Awaiter(this);
         var subscribers = new List<ICompletableFuture<T>>();
         foreach (var future in _futures)
         {
-            if (((ICompletableFuture<T>)future).Subscribe(this))
+            if (((ICompletableFuture<T>)future).Subscribe(awaiter))
             {
                 subscribers.Add(future);
             }
@@ -45,9 +30,39 @@ internal sealed class FirstCompletedPolicy<T> : IFutureAwaiterPolicy<T>, IFuture
 
         beforeWait?.Invoke(this);
         // at least one future should be completed to step over
-        _awaiterCond.WaitOne(timeout);
+        awaiter.Wait(timeout);
 
-        subscribers.ForEach(s => s.Unsubscribe(this));
-        return _completed;
+        subscribers.ForEach(s => s.Unsubscribe(awaiter));
+        return awaiter.Done;
+    }
+
+    private sealed class Awaiter : IFutureAwaiter<T>
+    {
+        private readonly object _lock = new();
+        private readonly ManualResetEvent _cond = new(false);
+        private readonly FirstCompletedPolicy<T> _policy;
+        private readonly List<Future<T>> _completed = new();
+
+        public Awaiter(FirstCompletedPolicy<T> policy)
+        {
+            _policy = policy ?? throw new ArgumentNullException(nameof(policy));
+        }
+
+        public void AddResult(Future<T> future) => this.Add(future);
+        public void AddException(Future<T> future) => this.Add(future);
+        public void AddCancellation(Future<T> future) => this.Add(future);
+
+        public void Add(Future<T> future)
+        {
+            lock(_lock)
+            {
+                _completed.Add(future);
+                _cond.Set();
+            }
+        }
+
+        public void Wait(TimeSpan timeout) => _cond.WaitOne(timeout);
+
+        public IReadOnlyCollection<Future<T>> Done => _completed;
     }
 }
