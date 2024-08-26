@@ -7,24 +7,23 @@ internal sealed class AllCompletedPolicy<T> : IFutureAwaiterPolicy<T>, IFutureAw
     private readonly object _awaiterLock = new();
     private readonly ManualResetEvent _awaiterCond = new(false);
     private readonly Future<T>[] _futures;
-    private int _uncompleted;
+    private readonly List<Future<T>> _completed = new();
 
     public AllCompletedPolicy(params Future<T>[] futures)
     {
         _futures = futures.ToArray();
-        _uncompleted = futures.Length;
     }
 
     void IFutureAwaiter<T>.AddResult(Future<T> future) => this.Add(future);
     void IFutureAwaiter<T>.AddException(Future<T> future) => this.Add(future);
     void IFutureAwaiter<T>.AddCancellation(Future<T> future) => this.Add(future);
 
-    private void Add(Future<T> _)
+    private void Add(Future<T> future)
     {
         lock(_awaiterLock)
         {
-            _uncompleted--;
-            if (_uncompleted == 0)
+            _completed.Add(future);
+            if (_completed.Count == _futures.Length)
             {
                 _awaiterCond.Set();
             }
@@ -47,18 +46,14 @@ internal sealed class AllCompletedPolicy<T> : IFutureAwaiterPolicy<T>, IFutureAw
         // kind of optimization
         if (subscribers.Count == 0)
         {
-            Debug.Assert(_uncompleted == 0);
+            Debug.Assert(_completed.Count == _futures.Length);
             return _futures;
         }
 
         beforeWait?.Invoke(this);
         _awaiterCond.WaitOne(timeout);
 
-        foreach (var subscriber in subscribers)
-        {
-            subscriber.Unsubscribe(this);
-        }
-        return _futures;
-
+        subscribers.ForEach(s => s.Unsubscribe(this));
+        return _completed;
     }
 }

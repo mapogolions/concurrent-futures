@@ -5,6 +5,22 @@ namespace Futures.Tests;
 public class FirstExceptionPolicyTest
 {
     [Fact]
+    public void ShouldReturnOnlyCompletedFutures_WhenTimeoutOccurs()
+    {
+        // Arrange
+        ICompletableFuture future1 = new Future();
+        ICompletableFuture future2 = new Future();
+        future2.SetResult("foo");
+        var policy = new FirstExceptionPolicy<object>((Future)future1, (Future)future2);
+
+        // Act
+        var done = policy.Wait(TimeSpan.FromMilliseconds(500));
+
+        // Assert
+        Assert.Single(done);
+    }
+
+    [Fact]
     public void ShouldWaitAllFuturesWhenThereIsNoCompletionWithException()
     {
         // Arrange
@@ -14,13 +30,13 @@ public class FirstExceptionPolicyTest
 
         void beforeWait(IFutureAwaiterPolicy<object> _)
         {
-            new Thread(() => 
+            new Thread(() =>
             {
                 Thread.Sleep(TimeSpan.FromMilliseconds(200));
                 future1.SetResult("foo");
             }).Start();
 
-            new Thread(() => 
+            new Thread(() =>
             {
                 Thread.Sleep(TimeSpan.FromMilliseconds(300));
                 future2.SetResult("bar");
@@ -44,7 +60,7 @@ public class FirstExceptionPolicyTest
 
         void beforeWait(IFutureAwaiterPolicy<object> _)
         {
-            new Thread(() => 
+            new Thread(() =>
             {
                 Thread.Sleep(TimeSpan.FromMilliseconds(200));
                 future2.SetException(new InvalidOperationException());

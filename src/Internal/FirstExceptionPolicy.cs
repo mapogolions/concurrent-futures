@@ -59,10 +59,7 @@ internal sealed class FirstExceptionPolicy<T> : IFutureAwaiterPolicy<T>, IFuture
         beforeWait?.Invoke(this);
         _awaiterCond.WaitOne(timeout);
 
-        foreach (var subscriber in subscribers)
-        {
-            subscriber.Unsubscribe(this);
-        }
+        subscribers.ForEach(s => s.Unsubscribe(this));
         return _completed;
     }
 }

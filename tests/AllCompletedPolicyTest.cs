@@ -5,6 +5,22 @@ namespace Futures.Tests;
 public class AllCompletedPolicyTest
 {
     [Fact]
+    public void ShouldReturnOnlyCompletedFutures_WhenTimeoutOccurs()
+    {
+        // Arrange
+        ICompletableFuture future1 = new Future();
+        ICompletableFuture future2 = new Future();
+        future2.SetResult("foo");
+        var policy = new AllCompletedPolicy<object>((Future)future1, (Future)future2);
+
+        // Act
+        var done = policy.Wait(TimeSpan.FromMilliseconds(500));
+
+        // Assert
+        Assert.Single(done);
+    }
+
+    [Fact]
     public void ShouldWait_WhenSomeFuturesAreCompletedBeforeWait()
     {
         // Arrange
