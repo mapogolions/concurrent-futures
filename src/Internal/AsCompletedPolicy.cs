@@ -83,7 +83,7 @@ internal sealed class AsCompletedPolicy<T> : IFutureAwaiterPolicy<T>
         {
             lock (_lock)
             {
-                var hasNext = _uncompleted != 0;
+                var hasNext = _uncompleted > 0;
                 if (hasNext)
                 {
                     _cond.Reset();
