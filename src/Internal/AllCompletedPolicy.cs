@@ -47,7 +47,7 @@ internal sealed class AllCompletedPolicy<T> : IFutureAwaiterPolicy<T>, IFutureAw
         if (subscribers.Count == 0)
         {
             Debug.Assert(_completed.Count == _futures.Length);
-            return _futures;
+            return _completed;
         }
 
         beforeWait?.Invoke(this);

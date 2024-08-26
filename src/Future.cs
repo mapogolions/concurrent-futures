@@ -207,6 +207,20 @@ public class Future<T> : ICompletableFuture<T>
 
 public sealed class Future : Future<object>, ICompletableFuture
 {
+    public static IEnumerable<Future<R>> AsCompleted<R>(params Future<R>[] futures) => AsCompleted(Timeout.InfiniteTimeSpan, futures);
+
+    public static IEnumerable<Future<R>> AsCompleted<R>(TimeSpan timeout, params Future<R>[] futures)
+    {
+        var policy = new AsCompletedPolicy<R>(futures);
+        foreach (var done in policy.AsEnumerable(timeout))
+        {
+            foreach (var future in done)
+            {
+                yield return future;
+            }
+        }
+    }
+
     public static IReadOnlyCollection<Future<R>> Wait<R>(FutureWaitPolicy policy, params Future<R>[] futures) =>
         Wait(Timeout.InfiniteTimeSpan, policy, futures);
 
