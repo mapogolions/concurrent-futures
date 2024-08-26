@@ -207,7 +207,10 @@ public class Future<T> : ICompletableFuture<T>
 
 public sealed class Future : Future<object>, ICompletableFuture
 {
-    public static IReadOnlyCollection<Future<R>> Wait<R>(FutureWaitPolicy policy, params Future<R>[] futures)
+    public static IReadOnlyCollection<Future<R>> Wait<R>(FutureWaitPolicy policy, params Future<R>[] futures) =>
+        Wait(Timeout.InfiniteTimeSpan, policy, futures);
+
+    public static IReadOnlyCollection<Future<R>> Wait<R>(TimeSpan timeout, FutureWaitPolicy policy, params Future<R>[] futures)
     {
         IFutureAwaiterPolicy<R> policy_ = policy switch
         {
@@ -216,12 +219,15 @@ public sealed class Future : Future<object>, ICompletableFuture
             FutureWaitPolicy.FirstException => new FirstExceptionPolicy<R>(futures),
             _ => throw new ArgumentOutOfRangeException()
         };
-        return policy_.Wait();
+        return policy_.Wait(timeout);
     }
 
-    public static IReadOnlyCollection<Future> Wait(FutureWaitPolicy policy, params Future[] futures)
+    public static IReadOnlyCollection<Future> Wait(FutureWaitPolicy policy, params Future[] futures) =>
+        Wait(Timeout.InfiniteTimeSpan, policy, futures);
+
+    public static IReadOnlyCollection<Future> Wait(TimeSpan timeout, FutureWaitPolicy policy, params Future[] futures)
     {
-        var done = Wait<object>(policy, futures);
+        var done = Wait<object>(timeout, policy, futures);
         return done.Cast<Future>().ToArray();
     }
 }
