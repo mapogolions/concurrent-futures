@@ -40,6 +40,7 @@ internal sealed class AsCompletedPolicy<T> : IFutureAwaiterPolicy<T>
             if (!awaiter.Wait(timeout))
             {
                 // exit by timeout
+                subscribers.ForEach(s => s.Unsubscribe(awaiter));
                 yield break;
             }
             if (awaiter.MoveNext(out var done))
