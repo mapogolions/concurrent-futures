@@ -43,12 +43,10 @@ internal sealed class FirstExceptionPolicy<T> : IFutureAwaiterPolicy<T>
         private readonly ManualResetEvent _cond = new(false);
         private readonly FirstExceptionPolicy<T> _policy;
         private readonly List<Future<T>> _completed = new();
-        private int _uncompleted;
 
         public Awaiter(FirstExceptionPolicy<T> policy)
         {
             _policy = policy ?? throw new ArgumentNullException(nameof(policy));
-            _uncompleted = policy._futures.Length;
         }
 
         public void AddResult(Future<T> future) => this.Add(future, CompletionType.Result);
@@ -59,14 +57,13 @@ internal sealed class FirstExceptionPolicy<T> : IFutureAwaiterPolicy<T>
         {
             lock(_lock)
             {
-                _uncompleted--;
                 _completed.Add(future);
                 if (completion is CompletionType.Exception)
                 {
                     _cond.Set();
                     return;
                 }
-                if (_uncompleted == 0)
+                if (_completed.Count == _policy._futures.Length)
                 {
                     _cond.Set();
                 }
