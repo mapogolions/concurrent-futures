@@ -5,6 +5,26 @@ namespace Futures.Tests;
 public class AsCompletedPolicyTest
 {
     [Fact]
+    public void ShouldBreakIterationByTimeout()
+    {
+        // Arrange
+        var future1 = new Future();
+        var future2 = new Future();
+        ((ICompletableFuture)future2).SetResult("foo");
+
+        // Act
+        var iter = Future.AsCompleted(TimeSpan.FromMilliseconds(500), future1, future2);
+        var done = new List<object>();
+        foreach (var future in iter)
+        {
+            done.Add(future);
+        }
+
+        // Assert
+        Assert.Single(done);
+    }
+
+    [Fact]
     public void ShouldIterate()
     {
         // Arrange

@@ -37,7 +37,11 @@ internal sealed class AsCompletedPolicy<T> : IFutureAwaiterPolicy<T>
         while (true)
         {
             beforeWait?.Invoke(this);
-            awaiter.Wait(timeout);
+            if (!awaiter.Wait(timeout))
+            {
+                // exit by timeout
+                yield break;
+            }
             if (awaiter.MoveNext(out var done))
             {
                 yield return done;
