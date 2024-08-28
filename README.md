@@ -2,6 +2,8 @@
 
 This project was born as an attempt to mimic the [`concurrent.futures` python package.](https://docs.python.org/3/library/concurrent.futures.html)
 
+[future.ipynb](./future.ipynb)
+
 #### Example
 ```cs
 using System.Net;
