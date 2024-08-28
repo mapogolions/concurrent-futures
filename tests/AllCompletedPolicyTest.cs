@@ -8,13 +8,12 @@ public class AllCompletedPolicyTest
     public void ShouldReturnOnlyCompletedFutures_WhenTimeoutOccurs()
     {
         // Arrange
-        ICompletableFuture future1 = new Future();
-        ICompletableFuture future2 = new Future();
-        future2.SetResult("foo");
-        var policy = new AllCompletedPolicy<object>((Future)future1, (Future)future2);
+        var future1 = new Future();
+        var future2 = new Future();
+        ((ICompletableFuture)future2).SetResult("foo");
 
         // Act
-        var done = policy.Wait(TimeSpan.FromMilliseconds(500));
+        var done = Future.Wait(timeout: TimeSpan.FromMilliseconds(400), FutureWaitPolicy.AllCompleted, future1, future2);
 
         // Assert
         Assert.Single(done);

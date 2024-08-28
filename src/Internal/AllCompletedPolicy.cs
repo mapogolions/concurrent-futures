@@ -25,7 +25,7 @@ internal sealed class AllCompletedPolicy<T> : IFutureAwaiterPolicy<T>
             }
         }
 
-        //// kind of optimization
+        // kind of optimization
         if (subscribers.Count == 0)
         {
             var done = awaiter.Done;

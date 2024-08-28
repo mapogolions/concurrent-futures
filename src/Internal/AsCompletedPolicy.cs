@@ -39,8 +39,12 @@ internal sealed class AsCompletedPolicy<T> : IFutureAwaiterPolicy<T>
             beforeWait?.Invoke(this);
             if (!awaiter.Wait(timeout))
             {
-                // exit by timeout
+                /**
+                 *  Even in the case of a timeout, the registered futures still have a small window of opportunity to notify `this` that they have completed. 
+                 *  Only after calling `Unsubscribe` for each future can we be certain that the `_completed` collection will not change.
+                 */
                 subscribers.ForEach(s => s.Unsubscribe(awaiter));
+                if (awaiter.Done.Count != 0) yield return awaiter.Done;
                 yield break;
             }
             if (awaiter.MoveNext(out var done))
@@ -98,5 +102,7 @@ internal sealed class AsCompletedPolicy<T> : IFutureAwaiterPolicy<T>
                 return hasNext;
             }
         }
+
+        public IReadOnlyCollection<Future<T>> Done => _completed;
     }
 }
