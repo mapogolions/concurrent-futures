@@ -1,8 +1,8 @@
 ### Concurrent Futures
 
-This project was born as an attempt to mimic the [`concurrent.futures` python package.](https://docs.python.org/3/library/concurrent.futures.html)
+This project was born as an attempt to mimic the [`concurrent.futures` python package.](https://docs.python.org/3/library/concurrent.futures.html).
 
-[future.ipynb](./future.ipynb)
+If the official documentation is not sufficient for you, you can find additional technical details with examples in the [future.ipynb](./future.ipynb) file.
 
 #### Example
 ```cs
