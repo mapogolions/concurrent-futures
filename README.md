@@ -24,7 +24,7 @@ using var httpClient = new HttpClient() { Timeout = TimeSpan.FromSeconds(4) };
 var futures = sources
     .Select(x => executor.Submit<HttpStatusCode>(s => Do(httpClient, (string)s!), x))
     .ToArray();
-var done = Future.Wait(FutureWaitPolicy.AllCompleted, futures);
+var done = Future.AsCompleted(futures);
 foreach (var future in done)
 {
     try
