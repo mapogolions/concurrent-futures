@@ -31,6 +31,7 @@ internal sealed class AllCompletedPolicy<T> : IFutureAwaiterPolicy<T>
             var done = awaiter.Done;
             Debug.Assert(done.Count == _futures.Length);
             return done;
+
         }
 
         beforeWait?.Invoke(this);
@@ -42,7 +43,7 @@ internal sealed class AllCompletedPolicy<T> : IFutureAwaiterPolicy<T>
 
     private sealed class Awaiter : IFutureAwaiter<T>
     {
-        private readonly object _lock = new object();
+        private readonly object _lock = new();
         private readonly ManualResetEvent _cond = new(false);
         private readonly AllCompletedPolicy<T> _policy;
         private readonly List<Future<T>> _completed = new();
