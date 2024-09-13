@@ -1,6 +1,6 @@
 ﻿namespace Futures.Internal;
 
-// In python, `threading.Condition` handles spurious wakesups
+// Python has `threading.Condition` which uses a mutex, a condition variable and a predicate to handle spurious wakeups
 internal sealed class Condition
 {
     private readonly object _lock = new();
