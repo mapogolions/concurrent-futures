@@ -12,9 +12,9 @@ public class ConditionTest
     {
         var cond = new Condition();
         cond.Acquire();
-        var notTimeout = cond.Wait(TimeSpan.FromMilliseconds(ms));
+        var signaled = cond.Wait(TimeSpan.FromMilliseconds(ms));
         cond.Release();
-        Assert.False(notTimeout);
+        Assert.False(signaled);
     }
 
     [Fact]
