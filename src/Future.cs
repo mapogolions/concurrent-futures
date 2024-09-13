@@ -7,7 +7,7 @@ public class Future<T> : ICompletableFuture<T>
     private FutureState _state = FutureState.Pending;
     private T? _result;
     private Exception? _exception;
-    private readonly Mutex _mutex = new();
+    private readonly Condition _cond = new();
     private readonly List<IFutureAwaiter<T>> _awaiters = new();
 
     public T? GetResult() => ((ICompletableFuture<T>)this).GetResult(Timeout.InfiniteTimeSpan, null);
@@ -15,17 +15,19 @@ public class Future<T> : ICompletableFuture<T>
 
     T? ICompletableFuture<T>.GetResult(TimeSpan timeout, Action<ICompletableFuture<T>>? beforeWait)
     {
-        Monitor.Enter(_mutex);
+        _cond.Acquire();
         if (TryGetResulOrException(out var result, out Exception? ex))
         {
-            return ReturnOrThrow(result, ex, finalize: () => Monitor.Exit(_mutex));
+            return ReturnOrThrow(result, ex, finalize: _cond.Release);
         }
         // `beforeWait` was introduced for testing purposes only
         beforeWait?.Invoke(this);
+
         // Pending or Running
-        Monitor.Wait(_mutex, timeout);
+        _cond.Wait(timeout);
+
         var finished = TryGetResulOrException(out result, out ex);
-        return ReturnOrThrow(result, finished ? ex : new TimeoutException(), finalize: () => Monitor.Exit(_mutex));
+        return ReturnOrThrow(result, finished ? ex : new TimeoutException(), finalize: _cond.Release);
     }
 
     private static T? ReturnOrThrow(T? result, Exception? ex, Action finalize)
@@ -67,52 +69,47 @@ public class Future<T> : ICompletableFuture<T>
 
     public bool Cancel()
     {
-        Monitor.Enter(_mutex);
+        _cond.Acquire();
         try
         {
             // There should be no way to cancel a running future
             if (_state is FutureState.Pending)
             {
                 _state = FutureState.Cancelled;
-                Monitor.PulseAll(_mutex);
+                _cond.NotifyAll();
                 return true;
             }
             return _state is FutureState.Cancelled || _state is FutureState.CancellationPropagated;
         }
-        finally
-        {
-            Monitor.Exit(_mutex);
-        }
+        finally { _cond.Release(); }
     }
 
     public bool Running()
     {
-        Monitor.Enter(_mutex);
+        _cond.Acquire();
         try
         {
             return _state is FutureState.Running;
         }
-        finally { Monitor.Exit(_mutex); }
+        finally { _cond.Release(); }
     }
 
     public bool Cancelled()
     {
-        Monitor.Enter(_mutex);
+        _cond.Acquire();
         try
         {
             return _state is FutureState.Cancelled || _state is FutureState.CancellationPropagated;
         }
-        finally { Monitor.Exit(_mutex); }
+        finally { _cond.Release(); }
     }
 
     FutureState ICompletableFuture<T>.State => _state;
 
-    /**
-     *  Used by IFutureAwaiter, which:
-     */
+    // Used by `IFutureAwaiter`
     bool ICompletableFuture<T>.Subscribe(IFutureAwaiter<T> awaiter)
     {
-        Monitor.Enter(_mutex);
+        _cond.Acquire();
         try
         {
             if (_state is FutureState.CancellationPropagated)
@@ -129,17 +126,17 @@ public class Future<T> : ICompletableFuture<T>
             _awaiters.Add(awaiter);
             return true;
         }
-        finally { Monitor.Exit(_mutex); }
+        finally { _cond.Release(); }
     }
 
     bool ICompletableFuture<T>.Unsubscribe(IFutureAwaiter<T> awaiter)
     {
-        Monitor.Enter(_mutex);
+        _cond.Acquire();
         try
         {
             return _awaiters.Remove(awaiter);
         }
-        finally { Monitor.Exit(_mutex); }
+        finally { _cond.Release(); }
     }
 
     /**
@@ -150,7 +147,7 @@ public class Future<T> : ICompletableFuture<T>
      */
     bool ICompletableFuture<T>.Run()
     {
-        Monitor.Enter(_mutex);
+        _cond.Acquire();
         try
         {
             if (_state is FutureState.Pending)
@@ -166,7 +163,7 @@ public class Future<T> : ICompletableFuture<T>
             }
             throw new InvalidFutureStateException($"Future in unexpected state: {_state}");
         }
-        finally { Monitor.Exit( _mutex); }
+        finally { _cond.Release(); }
     }
 
     /**
@@ -191,7 +188,7 @@ public class Future<T> : ICompletableFuture<T>
 
     private void Finish(Action<Future<T>> f)
     {
-        Monitor.Enter(_mutex);
+        _cond.Acquire();
         try
         {
             if (_state is not FutureState.Pending && _state is not FutureState.Running)
@@ -199,9 +196,9 @@ public class Future<T> : ICompletableFuture<T>
                 throw new InvalidFutureStateException();
             }
             f(this);
-            Monitor.PulseAll(_mutex);
+            _cond.NotifyAll();
         }
-        finally { Monitor.Exit(_mutex); }
+        finally { _cond.Release(); }
     }
 }
 
