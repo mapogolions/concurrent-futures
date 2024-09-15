@@ -32,8 +32,8 @@ internal sealed class FirstCompletedPolicy<T> : IFutureAwaiterPolicy<T>
         // at least one future should be completed to step over
         awaiter.Wait(timeout);
         /**
-         *  Even in the case of a timeout, the registered futures still have a small window of opportunity to notify `this` that they have completed. 
-         *  Only after calling `Unsubscribe` for each future can we be certain that the `_completed` collection will not change.
+         *  Even in the case of a timeout, the registered futures still have a small window of opportunity to notify `Awaiter` that they have completed. 
+         *  Only after calling `Unsubscribe` for each future can we be certain that the `Awaiter._completed` collection will not change.
          */
         subscribers.ForEach(s => s.Unsubscribe(awaiter));
         return awaiter.Done;

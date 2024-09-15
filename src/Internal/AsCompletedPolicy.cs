@@ -40,8 +40,8 @@ internal sealed class AsCompletedPolicy<T> : IFutureAwaiterPolicy<T>
             if (!awaiter.Wait(timeout))
             {
                 /**
-                 *  Even in the case of a timeout, the registered futures still have a small window of opportunity to notify `this` that they have completed. 
-                 *  Only after calling `Unsubscribe` for each future can we be certain that the `_completed` collection will not change.
+                 *  Even in the case of a timeout, the registered futures still have a small window of opportunity to notify `Awaiter` that they have completed. 
+                 *  Only after calling `Unsubscribe` for each future can we be certain that the `Awaiter._completed` collection will not change.
                  */
                 subscribers.ForEach(s => s.Unsubscribe(awaiter));
                 if (awaiter.Done.Count != 0) yield return awaiter.Done;
