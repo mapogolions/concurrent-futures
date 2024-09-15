@@ -10,6 +10,8 @@ public class Future<T> : ICompletableFuture<T>
     private readonly Condition _cond = new();
     private readonly List<IFutureAwaiter<T>> _awaiters = new();
 
+    internal Future() {}
+
     public T? GetResult() => ((ICompletableFuture<T>)this).GetResult(Timeout.InfiniteTimeSpan, null);
     public T? GetResult(TimeSpan timeout) => ((ICompletableFuture<T>)this).GetResult(timeout, null);
 
@@ -202,8 +204,11 @@ public class Future<T> : ICompletableFuture<T>
     }
 }
 
+
 public sealed class Future : Future<object>, ICompletableFuture
 {
+    internal Future() {}
+
     public static IEnumerable<Future<R>> AsCompleted<R>(params Future<R>[] futures) => AsCompleted(Timeout.InfiniteTimeSpan, futures);
 
     public static IEnumerable<Future<R>> AsCompleted<R>(TimeSpan timeout, params Future<R>[] futures)
