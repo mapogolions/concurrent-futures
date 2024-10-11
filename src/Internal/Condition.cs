@@ -13,13 +13,13 @@ internal sealed class Condition
     // Must be called under the lock, i.e. after `Condition.Acquire`
     public bool Wait(TimeSpan timeout)
     {
-        if (timeout < TimeSpan.Zero && timeout != Timeout.InfiniteTimeSpan)
-        {
-            throw new ArgumentOutOfRangeException(nameof(timeout));
-        }
         if (timeout == Timeout.InfiniteTimeSpan)
         {
             return WaitInfinite();
+        }
+        if (timeout < TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(timeout));
         }
         return WaitTimeout(timeout);
     }
