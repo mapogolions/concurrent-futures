@@ -1,4 +1,6 @@
-﻿namespace Futures.Internal;
+﻿using System.Threading;
+
+namespace Futures.Internal;
 
 internal sealed class Condition
 {
@@ -29,7 +31,8 @@ internal sealed class Condition
         while (!Volatile.Read(ref _flag))
         {
             var signaled = Monitor.Wait(_lock);
-            if (!signaled) return false;
+            // Even in the case of a timeout, there's a chance that `Notify` was called, meaning `flag` could be true
+            if (!signaled) return Volatile.Read(ref _flag);
         }
         return true;
     }
@@ -45,8 +48,9 @@ internal sealed class Condition
         do
         {
             var signaled = Monitor.Wait(_lock, TimeSpan.FromTicks(duration));
-            if (Volatile.Read(ref _flag)) return true; // valid signal
-            if (!signaled) return false; // timeout
+            // valid signal or timeout
+            // Even in the case of a timeout, there's a chance that `Notify` was called, meaning `flag` could be true
+            if (!signaled) return Volatile.Read(ref _flag);
             var delta = until - DateTime.UtcNow.Ticks; // spurious signal
             if (delta <= 0) return false;
         }
