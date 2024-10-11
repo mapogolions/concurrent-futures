@@ -36,7 +36,7 @@ public class FutureTest
         future.SetResult("foo");
         Assert.Throws<InvalidFutureStateException>(() => future.SetResult("foo"));
     }
-    
+
     [Fact]
     public void GetResultShouldReleaseLockAfterThrowingCancelledFutureException()
     {
@@ -46,13 +46,13 @@ public class FutureTest
 
         // Act + Assert
         Assert.Throws<CancelledFutureException>(() => future.GetResult());
-        var mre = new ManualResetEvent(false);
+        var mre = new ManualResetEventSlim(false);
         new Thread(() =>
         {
             Assert.Throws<CancelledFutureException>(() => future.GetResult());
             mre.Set();
         }).Start();
-        mre.WaitOne();
+        mre.Wait();
     }
 
     [Fact]
@@ -65,13 +65,13 @@ public class FutureTest
         // Act + Assert
         Assert.Throws<InvalidOperationException>(() => future.GetResult());
 
-        var mre = new ManualResetEvent(false);
+        var mre = new ManualResetEventSlim(false);
         new Thread(() =>
         {
             Assert.Throws<InvalidOperationException>(() => future.GetResult());
             mre.Set();
         }).Start();
-        mre.WaitOne();
+        mre.Wait();
     }
 
     [Fact]
@@ -84,13 +84,13 @@ public class FutureTest
         // Act + Assert
         Assert.Equal(true, future.GetResult());
 
-        var mre = new ManualResetEvent(false);
+        var mre = new ManualResetEventSlim(false);
         new Thread(() =>
         {
             Assert.Equal(true, future.GetResult());
             mre.Set();
         }).Start();
-        mre.WaitOne();
+        mre.Wait();
     }
 
     [Fact]
@@ -172,7 +172,7 @@ public class FutureTest
     public void CancellationShouldReturnTrue_WhenFutureCancelledAndCancellationPropagated()
     {
         ICompletableFuture future = new Future();
-        future.Cancel(); 
+        future.Cancel();
         future.Run(); // propagate cancellation
 
         Assert.Equal(FutureState.CancellationPropagated, future.State);

@@ -43,7 +43,7 @@ internal sealed class FirstExceptionPolicy<T> : IFutureAwaiterPolicy<T>
     private sealed class Awaiter : IFutureAwaiter<T>
     {
         private readonly object _lock = new();
-        private readonly ManualResetEvent _cond = new(false);
+        private readonly ManualResetEventSlim _cond = new(false);
         private readonly FirstExceptionPolicy<T> _policy;
         private readonly List<Future<T>> _completed = new();
 
@@ -73,7 +73,7 @@ internal sealed class FirstExceptionPolicy<T> : IFutureAwaiterPolicy<T>
             }
         }
 
-        public void Wait(TimeSpan timeout) => _cond.WaitOne(timeout);
+        public void Wait(TimeSpan timeout) => _cond.Wait(timeout);
 
         public IReadOnlyCollection<Future<T>> Done => _completed;
     }

@@ -61,7 +61,7 @@ internal sealed class AsCompletedPolicy<T> : IFutureAwaiterPolicy<T>
     private sealed class Awaiter : IFutureAwaiter<T>
     {
         private readonly object _lock = new();
-        private readonly ManualResetEvent _cond = new(false);
+        private readonly ManualResetEventSlim _cond = new(false);
         private readonly AsCompletedPolicy<T> _policy;
         private readonly List<Future<T>> _completed = new();
         private int _uncompleted;
@@ -86,7 +86,7 @@ internal sealed class AsCompletedPolicy<T> : IFutureAwaiterPolicy<T>
             }
         }
 
-        public bool Wait(TimeSpan timeout) => _cond.WaitOne(timeout);
+        public bool Wait(TimeSpan timeout) => _cond.Wait(timeout);
 
         public bool MoveNext(out IReadOnlyCollection<Future<T>> done)
         {

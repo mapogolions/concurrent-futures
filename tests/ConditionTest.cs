@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Futures.Internal;
 
 namespace Futures.Tests;
@@ -22,7 +21,7 @@ public class ConditionTest
     {
         // Arrange
         var cond = new Condition();
-        var acquired = new ManualResetEvent(false);
+        var acquired = new ManualResetEventSlim(false);
         var t = new Thread(() =>
         {
             cond.Acquire();
@@ -33,7 +32,7 @@ public class ConditionTest
 
         // Act + Assert
         t.Start();
-        acquired.WaitOne();
+        acquired.Wait();
         
         cond.Acquire();
         cond.NotifyOne();
