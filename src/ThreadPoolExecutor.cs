@@ -125,6 +125,6 @@ public class ThreadPoolExecutor : IDisposable
 
     public void Dispose()
     {
-        this.Shutdown();
+        this.Shutdown(true);
     }
 }
