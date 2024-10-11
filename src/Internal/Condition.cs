@@ -1,6 +1,4 @@
-﻿using System.Threading;
-
-namespace Futures.Internal;
+﻿namespace Futures.Internal;
 
 internal sealed class Condition
 {
