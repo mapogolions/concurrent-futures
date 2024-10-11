@@ -29,7 +29,7 @@ internal sealed class Condition
         while (!Volatile.Read(ref _flag))
         {
             var signaled = Monitor.Wait(_lock);
-            // Even in the case of a timeout, there's a chance that `Notify` was called, meaning `flag` could be true
+            // Even in the case of a timeout, there's a chance that `Condition.Notify` was called, meaning `Condition._flag` could be true
             if (!signaled) return Volatile.Read(ref _flag);
         }
         return true;
@@ -47,7 +47,7 @@ internal sealed class Condition
         {
             var signaled = Monitor.Wait(_lock, TimeSpan.FromTicks(duration));
             // valid signal or timeout
-            // Even in the case of a timeout, there's a chance that `Notify` was called, meaning `flag` could be true
+            // Even in the case of a timeout, there's a chance that `Condition.Notify` was called, meaning `Condition._flag` could be true
             if (!signaled) return Volatile.Read(ref _flag);
             var delta = until - DateTime.UtcNow.Ticks; // spurious signal
             if (delta <= 0) return false;
