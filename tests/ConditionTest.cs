@@ -9,6 +9,7 @@ public class ConditionTest
     public void ShouldIgnoreSpuriousSignalAndExitOnTimeout()
     {
         // Arrange
+        var clock = new Stopwatch();
         var timeout = TimeSpan.FromSeconds(2);
         var cond = new Condition();
         cond.Acquire();
@@ -22,7 +23,10 @@ public class ConditionTest
         t.Start();
 
         // Act + Assert
+        clock.Start();
         Assert.False(cond.Wait(timeout));
+        clock.Stop();
+        Assert.True(clock.ElapsedTicks >= timeout.Ticks);
         cond.Release();
     }
 
@@ -39,29 +43,41 @@ public class ConditionTest
     }
 
     [Fact]
-    public void ShouldNotify()
+    public void ShouldInterruptWait()
     {
-        // Arrange
+        var clock = new Stopwatch();
+        var timeout = TimeSpan.FromSeconds(10);
         var cond = new Condition();
-        var acquired = new ManualResetEventSlim(false);
-        var t = new Thread(() =>
+        cond.Acquire();
+
+        new Thread(() =>
         {
             cond.Acquire();
-            acquired.Set();
-            cond.Wait(Timeout.InfiniteTimeSpan);
+            cond.NotifyOne();
             cond.Release();
-        });
+        }).Start();
 
-        // Act + Assert
-        t.Start();
-        acquired.Wait();
-        
-        cond.Acquire();
-        cond.NotifyOne();
+        clock.Start();
+        Assert.True(cond.Wait(timeout));
+        clock.Stop();
+        Assert.True(clock.ElapsedTicks < timeout.Ticks);
         cond.Release();
+    }
 
-        t.Join();
+    [Fact]
+    public void ShouldInterruptInfiniteWait()
+    {
+        var cond = new Condition();
+        cond.Acquire();
 
-        Assert.True(true);
+        new Thread(() =>
+        {
+            cond.Acquire();
+            cond.NotifyOne();
+            cond.Release();
+        }).Start();
+
+        Assert.True(cond.Wait(Timeout.InfiniteTimeSpan));
+        cond.Release();
     }
 }
