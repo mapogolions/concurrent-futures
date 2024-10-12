@@ -46,7 +46,7 @@ public class ConditionTest
     public void ShouldInterruptWait()
     {
         var clock = new Stopwatch();
-        var timeout = TimeSpan.FromSeconds(10);
+        var timeout = TimeSpan.FromHours(1);
         var cond = new Condition();
         cond.Acquire();
 
