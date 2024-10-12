@@ -1,9 +1,31 @@
 using Futures.Internal;
+using System.Diagnostics;
 
 namespace Futures.Tests;
 
 public class ConditionTest
 {
+    [Fact]
+    public void ShouldIgnoreSpuriousSignalAndExitOnTimeout()
+    {
+        // Arrange
+        var timeout = TimeSpan.FromSeconds(2);
+        var cond = new Condition();
+        cond.Acquire();
+
+        var t = new Thread(() =>
+        {
+            cond.Acquire();
+            cond.SpuriousSignal();
+            cond.Release();
+        });
+        t.Start();
+
+        // Act + Assert
+        Assert.False(cond.Wait(timeout));
+        cond.Release();
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(200)]

@@ -237,3 +237,4 @@ public sealed class Future : Future<object>, ICompletableFuture
         return done.Cast<Future>().ToArray();
     }
 }
+
