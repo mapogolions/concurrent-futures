@@ -1,4 +1,5 @@
 ﻿using Futures.Internal;
+using System.Diagnostics;
 
 namespace Futures;
 
@@ -18,55 +19,44 @@ public class Future<T> : ICompletableFuture<T>
     T? ICompletableFuture<T>.GetResult(TimeSpan timeout, Action<ICompletableFuture<T>>? beforeWait)
     {
         _cond.Acquire();
-        if (TryGetResulOrException(out var result, out Exception? ex))
-        {
-            return ReturnOrThrow(result, ex, finalize: _cond.Release);
-        }
-        // `beforeWait` was introduced for testing purposes only
-        beforeWait?.Invoke(this);
-
-        // Pending or Running
-        _cond.Wait(timeout);
-
-        var finished = TryGetResulOrException(out result, out ex);
-        return ReturnOrThrow(result, finished ? ex : new TimeoutException(), finalize: _cond.Release);
-    }
-
-    private static T? ReturnOrThrow(T? result, Exception? ex, Action finalize)
-    {
         try
         {
-            if (ex != null) throw ex;
-            return result;
+            if (_state is FutureState.Cancelled || _state is FutureState.CancellationPropagated)
+            {
+                throw new CancelledFutureException();
+            }
+            if (_state is FutureState.Finished)
+            {
+                return GetResultOrThrow();
+            }
+
+            // `beforeWait` was introduced for testing purposes only
+            beforeWait?.Invoke(this);
+
+            // Pending or Running
+            _cond.Wait(timeout); // Release/Acquire
+
+            if (_state is FutureState.Cancelled || _state is FutureState.CancellationPropagated)
+            {
+                throw new CancelledFutureException();
+            }
+            if (_state is FutureState.Finished)
+            {
+                return GetResultOrThrow();
+            }
+            throw new TimeoutException();
         }
-        finally
-        {
-            finalize();
-        }
+        finally { _cond.Release(); }
     }
 
-    private bool TryGetResulOrException(out T? result, out Exception? ex)
+    private T? GetResultOrThrow()
     {
-        result = default;
-        ex = default;
-        if (_state is FutureState.Cancelled || _state is FutureState.CancellationPropagated)
+        Debug.Assert(_state is FutureState.Finished);
+        if (_exception is not null)
         {
-            ex = new CancelledFutureException();
-            return true;
+            throw _exception;
         }
-        if (_state is FutureState.Finished)
-        {
-            if (_exception != null)
-            {
-                ex = _exception;
-            }
-            else
-            {
-                result = _result;
-            }
-            return true;
-        }
-        return false;
+        return _result;
     }
 
     public bool Cancel()
