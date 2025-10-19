@@ -2,7 +2,7 @@
 
 This project was born as an attempt to mimic the [`concurrent.futures` python package.](https://docs.python.org/3/library/concurrent.futures.html).
 
-If the official documentation is not sufficient for you, you can find additional technical details with examples in the [future.ipynb](./future.ipynb) file.
+If you're new to futures or curious about their inner workings, take a look at the [future.ipynb](./future.ipynb) file — it contains extra technical explanations and examples.
 
 #### Example
 ```cs
