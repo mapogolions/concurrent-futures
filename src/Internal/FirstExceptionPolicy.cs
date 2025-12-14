@@ -7,14 +7,9 @@ internal enum CompletionType
     Cancellation
 }
 
-internal sealed class FirstExceptionPolicy<T> : IFutureAwaiterPolicy<T>
+internal sealed class FirstExceptionPolicy<T>(params Future<T>[] futures) : IFutureAwaiterPolicy<T>
 {
-    private readonly Future<T>[] _futures;
-
-    public FirstExceptionPolicy(params Future<T>[] futures)
-    {
-        _futures = futures.ToArray();
-    }
+    private readonly Future<T>[] _futures = [.. futures];
 
     public IReadOnlyCollection<Future<T>> Wait() => this.Wait(Timeout.InfiniteTimeSpan);
 
@@ -40,17 +35,11 @@ internal sealed class FirstExceptionPolicy<T> : IFutureAwaiterPolicy<T>
         return awaiter.Done;
     }
 
-    private sealed class Awaiter : IFutureAwaiter<T>
+    private sealed class Awaiter(FirstExceptionPolicy<T> policy) : IFutureAwaiter<T>
     {
-        private readonly object _lock = new();
+        private readonly Lock _lock = new();
         private readonly ManualResetEventSlim _cond = new(false);
-        private readonly FirstExceptionPolicy<T> _policy;
-        private readonly List<Future<T>> _completed = new();
-
-        public Awaiter(FirstExceptionPolicy<T> policy)
-        {
-            _policy = policy ?? throw new ArgumentNullException(nameof(policy));
-        }
+        private readonly List<Future<T>> _completed = [];
 
         public void AddResult(Future<T> future) => this.Add(future, CompletionType.Result);
         public void AddException(Future<T> future) => this.Add(future, CompletionType.Exception);
@@ -66,7 +55,7 @@ internal sealed class FirstExceptionPolicy<T> : IFutureAwaiterPolicy<T>
                     _cond.Set();
                     return;
                 }
-                if (_completed.Count == _policy._futures.Length)
+                if (_completed.Count == policy._futures.Length)
                 {
                     _cond.Set();
                 }

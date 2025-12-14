@@ -3,23 +3,16 @@ using Futures.Internal;
 
 namespace Futures;
 
-public class ThreadPoolExecutor : IDisposable
+public class ThreadPoolExecutor(int maxWorkers) : IDisposable
 {
-    private readonly int _maxWorkers;
     private bool _shutdown = false;
-    private readonly object _shutdownLock = new();
-    private readonly BlockingCollection<Action?> _queue = new();
+    private readonly Lock _shutdownLock = new();
+    private readonly BlockingCollection<Action?> _queue = [];
     private readonly SemaphoreSlim _sem = new(0);
-    private readonly Thread[] _threads;
+    private readonly Thread[] _threads = new Thread[maxWorkers];
     private int _spawns;
 
     public ThreadPoolExecutor() : this(Environment.ProcessorCount) { }
-
-    public ThreadPoolExecutor(int maxWorkers)
-    {
-        _maxWorkers = maxWorkers;
-        _threads = new Thread[maxWorkers];
-    }
 
     public Future<T> Submit<T>(Func<object?, T> callback, object? state)
     {
@@ -72,7 +65,7 @@ public class ThreadPoolExecutor : IDisposable
     private void Spawn()
     {
         if (_sem.Wait(TimeSpan.Zero)) return;
-        if (_spawns >= _maxWorkers) return;
+        if (_spawns >= maxWorkers) return;
         var t = new Thread(Worker) { IsBackground = true };
         t.Start(new WorkerArgs(this, _queue));
         _threads[_spawns++] = t;

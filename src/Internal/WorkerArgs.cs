@@ -2,16 +2,10 @@ using System.Collections.Concurrent;
 
 namespace Futures.Internal;
 
-internal sealed class WorkerArgs
+internal sealed class WorkerArgs(ThreadPoolExecutor executor, BlockingCollection<Action?> queue)
 {
-    public WorkerArgs(ThreadPoolExecutor executor, BlockingCollection<Action?> queue)
-    {
-        ExecutorRef = new WeakReference(executor);
-        Queue = queue;
-    }
-
-    public WeakReference ExecutorRef { get; }
-    public BlockingCollection<Action?> Queue { get; }
+    public WeakReference ExecutorRef { get; } = new WeakReference(executor);
+    public BlockingCollection<Action?> Queue { get; } = queue;
 
     public void Deconstruct(out WeakReference executorRef, out BlockingCollection<Action?> queue)
     {

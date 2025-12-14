@@ -9,7 +9,7 @@ public class Future<T> : ICompletableFuture<T>
     private T? _result;
     private Exception? _exception;
     private readonly Condition _cond = new();
-    private readonly List<IFutureAwaiter<T>> _awaiters = new();
+    private readonly List<IFutureAwaiter<T>> _awaiters = [];
 
     internal Future() {}
 

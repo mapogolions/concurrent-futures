@@ -1,13 +1,8 @@
 namespace Futures.Internal;
 
-internal sealed class FirstCompletedPolicy<T> : IFutureAwaiterPolicy<T>
+internal sealed class FirstCompletedPolicy<T>(params Future<T>[] futures) : IFutureAwaiterPolicy<T>
 {
-    private readonly Future<T>[] _futures;
-
-    public FirstCompletedPolicy(params Future<T>[] futures)
-    {
-        _futures = futures.ToArray();
-    }
+    private readonly Future<T>[] _futures = [.. futures];
 
     public IReadOnlyCollection<Future<T>> Wait() => this.Wait(Timeout.InfiniteTimeSpan);
 
@@ -18,7 +13,7 @@ internal sealed class FirstCompletedPolicy<T> : IFutureAwaiterPolicy<T>
     */
     public IReadOnlyCollection<Future<T>> Wait(TimeSpan timeout, Action<IFutureAwaiterPolicy<T>>? beforeWait = null)
     {
-        var awaiter = new Awaiter(this);
+        var awaiter = new Awaiter();
         var subscribers = new List<ICompletableFuture<T>>();
         foreach (var future in _futures)
         {
@@ -41,15 +36,9 @@ internal sealed class FirstCompletedPolicy<T> : IFutureAwaiterPolicy<T>
 
     private sealed class Awaiter : IFutureAwaiter<T>
     {
-        private readonly object _lock = new();
+        private readonly Lock _lock = new();
         private readonly ManualResetEventSlim _cond = new(false);
-        private readonly FirstCompletedPolicy<T> _policy;
-        private readonly List<Future<T>> _completed = new();
-
-        public Awaiter(FirstCompletedPolicy<T> policy)
-        {
-            _policy = policy ?? throw new ArgumentNullException(nameof(policy));
-        }
+        private readonly List<Future<T>> _completed = [];
 
         public void AddResult(Future<T> future) => this.Add(future);
         public void AddException(Future<T> future) => this.Add(future);

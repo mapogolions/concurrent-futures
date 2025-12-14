@@ -1,29 +1,18 @@
 namespace Futures.Internal;
 
-internal sealed class WorkItem<T>
+internal sealed class WorkItem<T>(ICompletableFuture<T> future, Func<object?, T> callback, object? state)
 {
-    private readonly ICompletableFuture<T> _future;
-    private readonly Func<object?, T> _callback;
-    private readonly object? _state;
-
-    public WorkItem(ICompletableFuture<T> future, Func<object?, T> callback, object? state)
-    {
-        _future = future;
-        _callback = callback;
-        _state = state;
-    }
-
     public void Run()
     {
-        if (!_future.Run()) return;
+        if (!future.Run()) return;
         try
         {
-            var result = _callback(_state);
-            _future.SetResult(result);
+            var result = callback(state);
+            future.SetResult(result);
         }
         catch (Exception ex)
         {
-            _future.SetException(ex);
+            future.SetException(ex);
         }
     }
 }

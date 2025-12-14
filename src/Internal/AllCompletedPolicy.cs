@@ -2,14 +2,9 @@ using System.Diagnostics;
 
 namespace Futures.Internal;
 
-internal sealed class AllCompletedPolicy<T> : IFutureAwaiterPolicy<T>
+internal sealed class AllCompletedPolicy<T>(params Future<T>[] futures) : IFutureAwaiterPolicy<T>
 {
-    private readonly Future<T>[] _futures;
-
-    public AllCompletedPolicy(params Future<T>[] futures)
-    {
-        _futures = futures.ToArray();
-    }
+    private readonly Future<T>[] _futures = [.. futures];
 
     public IReadOnlyCollection<Future<T>> Wait() => this.Wait(Timeout.InfiniteTimeSpan);
 
@@ -44,17 +39,11 @@ internal sealed class AllCompletedPolicy<T> : IFutureAwaiterPolicy<T>
         return awaiter.Done;
     }
 
-    private sealed class Awaiter : IFutureAwaiter<T>
+    private sealed class Awaiter(AllCompletedPolicy<T> policy) : IFutureAwaiter<T>
     {
-        private readonly object _lock = new();
+        private readonly Lock _lock = new();
         private readonly ManualResetEventSlim _cond = new(false);
-        private readonly AllCompletedPolicy<T> _policy;
-        private readonly List<Future<T>> _completed = new();
-
-        public Awaiter(AllCompletedPolicy<T> policy)
-        {
-            _policy = policy ?? throw new ArgumentNullException(nameof(policy));
-        }
+        private readonly List<Future<T>> _completed = [];
 
         public void AddResult(Future<T> future) => this.Add(future);
         public void AddException(Future<T> future) => this.Add(future);
@@ -65,7 +54,7 @@ internal sealed class AllCompletedPolicy<T> : IFutureAwaiterPolicy<T>
             lock (_lock)
             {
                 _completed.Add(future);
-                if (_completed.Count == _policy._futures.Length)
+                if (_completed.Count == policy._futures.Length)
                 {
                     _cond.Set();
                 }

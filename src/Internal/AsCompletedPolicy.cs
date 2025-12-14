@@ -1,13 +1,8 @@
 namespace Futures.Internal;
 
-internal sealed class AsCompletedPolicy<T> : IFutureAwaiterPolicy<T>
+internal sealed class AsCompletedPolicy<T>(params Future<T>[] futures) : IFutureAwaiterPolicy<T>
 {
-    private readonly Future<T>[] _futures;
-
-    public AsCompletedPolicy(params Future<T>[] futures)
-    {
-        _futures = futures.ToArray();
-    }
+    private readonly Future<T>[] _futures = [.. futures];
 
     public IReadOnlyCollection<Future<T>> Wait() => this.Wait(Timeout.InfiniteTimeSpan);
 
@@ -58,19 +53,12 @@ internal sealed class AsCompletedPolicy<T> : IFutureAwaiterPolicy<T>
         }
     }
 
-    private sealed class Awaiter : IFutureAwaiter<T>
+    private sealed class Awaiter(AsCompletedPolicy<T> policy) : IFutureAwaiter<T>
     {
-        private readonly object _lock = new();
+        private readonly Lock _lock = new();
         private readonly ManualResetEventSlim _cond = new(false);
-        private readonly AsCompletedPolicy<T> _policy;
-        private readonly List<Future<T>> _completed = new();
-        private int _uncompleted;
-
-        public Awaiter(AsCompletedPolicy<T> policy)
-        {
-            _policy = policy ?? throw new ArgumentNullException(nameof(policy));
-            _uncompleted = policy._futures.Length;
-        }
+        private readonly List<Future<T>> _completed = [];
+        private int _uncompleted = policy._futures.Length;
 
         public void AddResult(Future<T> future) => this.Add(future);
         public void AddException(Future<T> future) => this.Add(future);
@@ -97,7 +85,7 @@ internal sealed class AsCompletedPolicy<T> : IFutureAwaiterPolicy<T>
                 {
                     _cond.Reset();
                 }
-                done = _completed.ToArray();
+                done = [.. _completed];
                 _completed.Clear();
                 return hasNext;
             }
