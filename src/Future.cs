@@ -27,7 +27,7 @@ public class Future<T> : ICompletableFuture<T>
             }
             if (_state is FutureState.Finished)
             {
-                return GetResultOrThrow();
+                return ResultOrThrow();
             }
 
             // `beforeWait` was introduced for testing purposes only
@@ -42,14 +42,14 @@ public class Future<T> : ICompletableFuture<T>
             }
             if (_state is FutureState.Finished)
             {
-                return GetResultOrThrow();
+                return ResultOrThrow();
             }
             throw new TimeoutException();
         }
         finally { _cond.Release(); }
     }
 
-    private T? GetResultOrThrow()
+    private T? ResultOrThrow()
     {
         Debug.Assert(_state is FutureState.Finished);
         if (_exception is not null)
@@ -234,7 +234,7 @@ public sealed class Future : Future<object>, ICompletableFuture
     public static IReadOnlyCollection<Future> Wait(TimeSpan timeout, FutureWaitPolicy policy, params Future[] futures)
     {
         var done = Wait<object>(timeout, policy, futures);
-        return done.Cast<Future>().ToArray();
+        return [.. done.Cast<Future>()];
     }
 }
 
