@@ -52,7 +52,7 @@ internal sealed class Condition
                 return Volatile.Read(ref _flag);
             }
             var signaled = Monitor.Wait(_lock, Monotonic.FromTicks(remainingTicks));
-            if (!signaled) // timoeut
+            if (!signaled) // timeout
             {
                 // Timeout reached, but notify could have raced
                 return Volatile.Read(ref _flag);

@@ -10,9 +10,9 @@ namespace Future.Internal
             return (long)(t.TotalSeconds * Stopwatch.Frequency);
         }
         
-        public static TimeSpan FromTicks(long monoTicks)
+        public static TimeSpan FromTicks(long ticks)
         {
-            return System.TimeSpan.FromTicks((long)((double)System.TimeSpan.TicksPerSecond / Stopwatch.Frequency * monoTicks));
+            return TimeSpan.FromTicks((long)((double)TimeSpan.TicksPerSecond / Stopwatch.Frequency * ticks));
         }
     }
 }

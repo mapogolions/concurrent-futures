@@ -15,13 +15,12 @@ public class ConditionTest
         var cond = new Condition();
         cond.Acquire();
 
-        var t = new Thread(() =>
+        new Thread(() =>
         {
             cond.Acquire();
             cond.SpuriousSignal();
             cond.Release();
-        });
-        t.Start();
+        }).Start();
 
         // Act + Assert
         clock.Start();
