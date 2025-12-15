@@ -1,3 +1,4 @@
+using Future.Internal;
 using Futures.Internal;
 using System.Diagnostics;
 
@@ -26,7 +27,7 @@ public class ConditionTest
         clock.Start();
         Assert.False(cond.Wait(timeout));
         clock.Stop();
-        Assert.True(clock.ElapsedTicks >= timeout.Ticks);
+        Assert.True(clock.ElapsedTicks >= Monotonic.Ticks(timeout));
         cond.Release();
     }
 
@@ -60,7 +61,7 @@ public class ConditionTest
         clock.Start();
         Assert.True(cond.Wait(timeout));
         clock.Stop();
-        Assert.True(clock.ElapsedTicks < timeout.Ticks);
+        Assert.True(clock.ElapsedTicks < Monotonic.Ticks(timeout));
         cond.Release();
     }
 

@@ -1,4 +1,7 @@
-﻿namespace Futures.Internal;
+﻿using Future.Internal;
+using System.Diagnostics;
+
+namespace Futures.Internal;
 
 internal sealed class Condition
 {
@@ -39,25 +42,25 @@ internal sealed class Condition
         {
             return true;
         }
-        var until = DateTime.UtcNow.Add(timeout).Ticks;
-        long duration = timeout.Ticks;
-        do
+        var deadline = Stopwatch.GetTimestamp() + Monotonic.Ticks(timeout);
+        while (true)
         {
-            var signaled = Monitor.Wait(_lock, TimeSpan.FromTicks(duration));
-            if (!signaled) // timeout
+            var remainingTicks = deadline - Stopwatch.GetTimestamp();
+            if (remainingTicks <= 0)
             {
-                // There is a chance that `Condition.Notify` was called.
+                // Timeout reached, but notify could have raced
                 return Volatile.Read(ref _flag);
             }
+            var signaled = Monitor.Wait(_lock, Monotonic.FromTicks(remainingTicks));
+            if (!signaled) // timoeut
+            {
+                // Timeout reached, but notify could have raced
+                return Volatile.Read(ref _flag);
+            }
+            // There is a chance that `Condition.Notify` was called.
             if (Volatile.Read(ref _flag)) return true; // normal signal
-            duration = until - DateTime.UtcNow.Ticks; // spurious signal
-            if (duration <= 0)
-            {
-                // There is a chance that `Condition.Notify` was called.
-                return Volatile.Read(ref _flag);
-            }
+            // spurious signal
         }
-        while (true);
     }
 
     // Must be called under the lock, i.e. after `Condition.Acquire`
