@@ -180,7 +180,7 @@ public class FutureTest
     }
 
     [Fact]
-    public void CancellationShouldReturnTrue_WhenFutureCancelled() // Idempotancy
+    public void CancellationShouldReturnTrue_WhenFutureCancelled() // Idempotence
     {
         ICompletableFuture future = new Future();
         future.Cancel();
