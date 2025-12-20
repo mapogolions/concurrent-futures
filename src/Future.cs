@@ -71,7 +71,7 @@ public class Future<T> : ICompletableFuture<T>
                 _cond.NotifyAll();
                 return true;
             }
-            return _state is FutureState.Cancelled || _state is FutureState.CancellationPropagated;
+            return _state is FutureState.Cancelled or FutureState.CancellationPropagated;
         }
         finally { _cond.Release(); }
     }
@@ -91,7 +91,7 @@ public class Future<T> : ICompletableFuture<T>
         _cond.Acquire();
         try
         {
-            return _state is FutureState.Cancelled || _state is FutureState.CancellationPropagated;
+            return _state is FutureState.Cancelled or FutureState.CancellationPropagated;
         }
         finally { _cond.Release(); }
     }

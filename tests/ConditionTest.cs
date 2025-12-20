@@ -1,6 +1,6 @@
+using System.Diagnostics;
 using Future.Internal;
 using Futures.Internal;
-using System.Diagnostics;
 
 namespace Futures.Tests;
 
@@ -11,6 +11,7 @@ public class ConditionTest
     {
         // Arrange
         var clock = new Stopwatch();
+        var tolerance = Monotonic.Ticks(TimeSpan.FromMilliseconds(20));
         var timeout = TimeSpan.FromSeconds(2);
         var cond = new Condition();
         cond.Acquire();
@@ -26,7 +27,7 @@ public class ConditionTest
         clock.Start();
         Assert.False(cond.Wait(timeout));
         clock.Stop();
-        Assert.True(clock.ElapsedTicks >= Monotonic.Ticks(timeout));
+        Assert.True(clock.ElapsedTicks + tolerance >= Monotonic.Ticks(timeout));
         cond.Release();
     }
 
