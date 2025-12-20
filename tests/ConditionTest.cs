@@ -10,12 +10,11 @@ public class ConditionTest
     public void ShouldIgnoreSpuriousSignalAndExitOnTimeout()
     {
         // Arrange
-        var clock = new Stopwatch();
-        var tolerance = Monotonic.Ticks(TimeSpan.FromMilliseconds(20));
-        var timeout = TimeSpan.FromSeconds(2);
-        var cond = new Condition();
+        var (clock, cond) = (new Stopwatch(), new Condition());
+        var (timeout, tolerance) = (TimeSpan.FromSeconds(2), Monotonic.Ticks(TimeSpan.FromMilliseconds(20)));
+        
+        // Act
         cond.Acquire();
-
         new Thread(() =>
         {
             cond.Acquire();
@@ -23,12 +22,14 @@ public class ConditionTest
             cond.Release();
         }).Start();
 
-        // Act + Assert
         clock.Start();
-        Assert.False(cond.Wait(timeout));
+        var signaled = cond.Wait(timeout);
         clock.Stop();
-        Assert.True(clock.ElapsedTicks + tolerance >= Monotonic.Ticks(timeout));
         cond.Release();
+       
+        // Assert
+        Assert.False(signaled);
+        Assert.True(clock.ElapsedTicks + tolerance >= Monotonic.Ticks(timeout));
     }
 
     [Theory]
@@ -36,21 +37,27 @@ public class ConditionTest
     [InlineData(200)]
     public void ShouldExitOnTimeout(int ms)
     {
+        // Arrange
         var cond = new Condition();
+        
+        // Act
         cond.Acquire();
         var signaled = cond.Wait(TimeSpan.FromMilliseconds(ms));
         cond.Release();
+        
+        // Assert
         Assert.False(signaled);
     }
 
     [Fact]
     public void ShouldInterruptWait()
     {
-        var clock = new Stopwatch();
+        // Arrange
         var timeout = TimeSpan.FromHours(1);
-        var cond = new Condition();
+        var (clock, cond) = (new Stopwatch(), new Condition());
+        
+        // Act
         cond.Acquire();
-
         new Thread(() =>
         {
             cond.Acquire();
@@ -59,18 +66,23 @@ public class ConditionTest
         }).Start();
 
         clock.Start();
-        Assert.True(cond.Wait(timeout));
+        var signaled = cond.Wait(timeout);
         clock.Stop();
-        Assert.True(clock.ElapsedTicks < Monotonic.Ticks(timeout));
         cond.Release();
+        
+        // Assert
+        Assert.True(signaled);
+        Assert.True(clock.ElapsedTicks < Monotonic.Ticks(timeout));
     }
 
     [Fact]
     public void ShouldInterruptInfiniteWait()
     {
+        // Arrange
         var cond = new Condition();
-        cond.Acquire();
 
+        // Act
+        cond.Acquire();
         new Thread(() =>
         {
             cond.Acquire();
@@ -78,7 +90,10 @@ public class ConditionTest
             cond.Release();
         }).Start();
 
-        Assert.True(cond.Wait(Timeout.InfiniteTimeSpan));
+        var signaled = cond.Wait(Timeout.InfiniteTimeSpan);
         cond.Release();
+        
+        // Assert
+        Assert.True(signaled);
     }
 }
