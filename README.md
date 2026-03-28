@@ -1,5 +1,7 @@
 ### Concurrent Futures
 
+[![CI](https://github.com/mapogolions/concurrent-futures/actions/workflows/ci.yaml/badge.svg)](https://github.com/mapogolions/concurrent-futures/actions/workflows/ci.yaml)
+
 This project was born as an attempt to mimic the [`concurrent.futures` python package.](https://docs.python.org/3/library/concurrent.futures.html).
 
 If you're new to futures or curious about their inner workings, take a look at the [future.ipynb](./future.ipynb) file — it contains extra technical explanations and examples.
